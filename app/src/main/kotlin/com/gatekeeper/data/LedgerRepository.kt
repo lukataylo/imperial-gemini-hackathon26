@@ -1,0 +1,291 @@
+package com.gatekeeper.data
+
+import android.content.Context
+import com.gatekeeper.model.AccessMode
+import com.gatekeeper.model.Grant
+import com.gatekeeper.model.GrantHistoryItem
+import com.gatekeeper.model.LedgerData
+import com.gatekeeper.model.LedgerSnapshot
+import com.gatekeeper.model.UsageSample
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+interface LedgerRepository {
+    val ledgerData: StateFlow<LedgerData>
+
+    suspend fun getSnapshot(appId: String, now: Long, zoneId: ZoneId = ZoneId.systemDefault()): LedgerSnapshot
+    suspend fun getActiveGrant(): Grant?
+    suspend fun setActiveGrant(grant: Grant?)
+    suspend fun recordGrant(
+        grant: Grant,
+        plea: String,
+        proposedMinutes: Int
+    ): GrantHistoryItem
+    suspend fun resolveGrantOutcome(
+        appId: String,
+        endedAt: Long,
+        overranByMinutes: Int? = null,
+        honoured: Boolean? = null
+    )
+    suspend fun addUsageMinutes(appId: String, day: String, minutes: Int)
+    suspend fun getRecentGrants(limit: Int = 10): List<GrantHistoryItem>
+    suspend fun seedDemoData(userGoal: String = "stop losing evenings to reels")
+    suspend fun clearAll()
+}
+
+class JsonLedgerRepository(
+    private val context: Context,
+    private val settingsRepository: SettingsRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : LedgerRepository {
+
+    private val json = Json {
+        prettyPrint = true
+        ignoreUnknownKeys = true
+    }
+
+    private val mutex = Mutex()
+    private val file: File get() = File(context.filesDir, "ledger_data.json")
+
+    private val _ledgerData = MutableStateFlow(LedgerData())
+    override val ledgerData: StateFlow<LedgerData> = _ledgerData.asStateFlow()
+
+    init {
+        loadInitialData()
+    }
+
+    private fun loadInitialData() {
+        try {
+            if (file.exists()) {
+                val content = file.readText()
+                val data = json.decodeFromString<LedgerData>(content)
+                _ledgerData.value = data
+            }
+        } catch (e: Exception) {
+            _ledgerData.value = LedgerData()
+        }
+    }
+
+    private suspend fun persistLocked() {
+        withContext(ioDispatcher) {
+            try {
+                val text = json.encodeToString(_ledgerData.value)
+                file.writeText(text)
+            } catch (_: Exception) {}
+        }
+    }
+
+    override suspend fun getSnapshot(appId: String, now: Long, zoneId: ZoneId): LedgerSnapshot = mutex.withLock {
+        val currentData = _ledgerData.value
+        val todayStr = LocalDate.ofInstant(Instant.ofEpochMilli(now), zoneId).format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+        // Today usage
+        val todayUsage = currentData.usageSamples
+            .filter { it.appId == appId && it.day == todayStr }
+            .sumOf { it.minutes }
+
+        // Today grants count
+        val startOfDayMillis = LocalDate.ofInstant(Instant.ofEpochMilli(now), zoneId)
+            .atStartOfDay(zoneId)
+            .toInstant()
+            .toEpochMilli()
+        val todayGrants = currentData.grantRecords
+            .filter { it.appId == appId && it.requestedAt >= startOfDayMillis }
+
+        // Active grant (check expiry)
+        val active = currentData.activeGrant?.takeIf { !it.isExpired(now) && it.appId == appId }
+
+        // Last grant for this app
+        val lastGrant = currentData.grantRecords
+            .filter { it.appId == appId }
+            .maxByOrNull { it.requestedAt }
+
+        // Recent grants
+        val recentGrants = currentData.grantRecords
+            .sortedByDescending { it.requestedAt }
+            .take(10)
+
+        // Week promise statistics (last 7 days)
+        val weekAgoMillis = now - 7 * 24 * 3600 * 1000L
+        val weekGrants = currentData.grantRecords
+            .filter { it.requestedAt >= weekAgoMillis && it.promise.isNotBlank() }
+        val weekHonoured = weekGrants.count { it.honoured == true }
+        val weekTotal = weekGrants.count { it.honoured != null }
+
+        val rules = settingsRepository.getRules()
+        val dailyBudget = rules.dailyBudgetMinutes[appId] ?: 60
+        val userGoal = settingsRepository.getUserGoal()
+
+        LedgerSnapshot(
+            appId = appId,
+            todayUsageMinutes = todayUsage,
+            todayDailyBudgetMinutes = dailyBudget,
+            todayGrantsCount = todayGrants.size,
+            activeGrant = active,
+            lastGrant = lastGrant,
+            recentGrants = recentGrants,
+            weekHonouredCount = weekHonoured,
+            weekTotalPromisesCount = weekTotal,
+            userGoal = userGoal
+        )
+    }
+
+    override suspend fun getActiveGrant(): Grant? = mutex.withLock {
+        _ledgerData.value.activeGrant
+    }
+
+    override suspend fun setActiveGrant(grant: Grant?): Unit = mutex.withLock {
+        _ledgerData.value = _ledgerData.value.copy(activeGrant = grant)
+        persistLocked()
+    }
+
+    override suspend fun recordGrant(
+        grant: Grant,
+        plea: String,
+        proposedMinutes: Int
+    ): GrantHistoryItem = mutex.withLock {
+        val nextId = (_ledgerData.value.grantRecords.maxOfOrNull { it.id } ?: 0L) + 1L
+        val record = GrantHistoryItem(
+            id = nextId,
+            appId = grant.appId,
+            requestedAt = grant.startedAt,
+            plea = plea,
+            proposedMinutes = proposedMinutes,
+            grantedMinutes = grant.minutes,
+            mode = grant.mode,
+            promise = grant.promise,
+            endedAt = null,
+            overranBy = null,
+            honoured = null
+        )
+        val updatedList = _ledgerData.value.grantRecords + record
+        _ledgerData.value = _ledgerData.value.copy(
+            grantRecords = updatedList,
+            activeGrant = grant
+        )
+        persistLocked()
+        record
+    }
+
+    override suspend fun resolveGrantOutcome(
+        appId: String,
+        endedAt: Long,
+        overranByMinutes: Int?,
+        honoured: Boolean?
+    ): Unit = mutex.withLock {
+        val isHonoured = honoured ?: (overranByMinutes == null || overranByMinutes <= 0)
+        val updatedRecords = _ledgerData.value.grantRecords.map { record ->
+            if (record.appId == appId && record.endedAt == null) {
+                record.copy(
+                    endedAt = endedAt,
+                    overranBy = overranByMinutes,
+                    honoured = isHonoured
+                )
+            } else {
+                record
+            }
+        }
+        val currentActive = _ledgerData.value.activeGrant
+        val updatedActive = if (currentActive?.appId == appId) null else currentActive
+
+        _ledgerData.value = _ledgerData.value.copy(
+            grantRecords = updatedRecords,
+            activeGrant = updatedActive
+        )
+        persistLocked()
+    }
+
+    override suspend fun addUsageMinutes(appId: String, day: String, minutes: Int): Unit = mutex.withLock {
+        val existing = _ledgerData.value.usageSamples.firstOrNull { it.appId == appId && it.day == day }
+        val updatedSamples = if (existing != null) {
+            _ledgerData.value.usageSamples.map {
+                if (it.appId == appId && it.day == day) it.copy(minutes = it.minutes + minutes) else it
+            }
+        } else {
+            _ledgerData.value.usageSamples + UsageSample(appId = appId, day = day, minutes = minutes)
+        }
+        _ledgerData.value = _ledgerData.value.copy(usageSamples = updatedSamples)
+        persistLocked()
+    }
+
+    override suspend fun getRecentGrants(limit: Int): List<GrantHistoryItem> = mutex.withLock {
+        _ledgerData.value.grantRecords.sortedByDescending { it.requestedAt }.take(limit)
+    }
+
+    override suspend fun seedDemoData(userGoal: String): Unit = mutex.withLock {
+        val now = System.currentTimeMillis()
+        val todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+        val sampleGrants = listOf(
+            GrantHistoryItem(
+                id = 1L,
+                appId = "com.instagram.android",
+                requestedAt = now - 25 * 60 * 1000L,
+                plea = "need to reply to Maya about tomorrow's venue",
+                proposedMinutes = 20,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "just replying to Maya",
+                endedAt = now - 15 * 60 * 1000L,
+                overranBy = 14,
+                honoured = false
+            ),
+            GrantHistoryItem(
+                id = 2L,
+                appId = "com.instagram.android",
+                requestedAt = now - 3 * 3600 * 1000L,
+                plea = "check recipe for dinner",
+                proposedMinutes = 5,
+                grantedMinutes = 5,
+                mode = AccessMode.FULL,
+                promise = "save pasta recipe and close",
+                endedAt = now - 3 * 3600 * 1000L + 5 * 60 * 1000L,
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 3L,
+                appId = "com.instagram.android",
+                requestedAt = now - 24 * 3600 * 1000L,
+                plea = "posting event details",
+                proposedMinutes = 15,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "post flyer only",
+                endedAt = now - 24 * 3600 * 1000L + 10 * 60 * 1000L,
+                overranBy = 0,
+                honoured = true
+            )
+        )
+
+        val usage = listOf(
+            UsageSample(appId = "com.instagram.android", day = todayStr, minutes = 47)
+        )
+
+        _ledgerData.value = LedgerData(
+            grantRecords = sampleGrants,
+            usageSamples = usage,
+            activeGrant = null
+        )
+        settingsRepository.setUserGoal(userGoal)
+        persistLocked()
+    }
+
+    override suspend fun clearAll(): Unit = mutex.withLock {
+        _ledgerData.value = LedgerData()
+        persistLocked()
+    }
+}

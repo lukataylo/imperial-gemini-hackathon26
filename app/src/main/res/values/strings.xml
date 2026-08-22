@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gatekeeper</string>
+    <string name="accessibility_service_description">Gatekeeper watches for distracting app launches to initiate negotiations and enforce mindful screen time limits entirely on your device.</string>
+    <string name="foreground_service_notification_title">Gatekeeper is active</string>
+    <string name="foreground_service_notification_text">On-device protection is running.</string>
+</resources>

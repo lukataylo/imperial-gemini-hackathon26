@@ -1,0 +1,23 @@
+# Gradle / build
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+local.properties
+captures/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Android
+*.apk
+*.aab
+release/
+
+# Model weights — never commit. See README for the adb push step.
+*.litertlm
+*.task
+*.bin
