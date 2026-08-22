@@ -140,12 +140,23 @@ class UsageInsights(
 
     private fun callOnce(model: String, prompt: String): Result {
         return try {
-            val body = JSONObject().put(
-                "contents",
-                JSONArray().put(
-                    JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))
+            val body = JSONObject()
+                .put(
+                    "contents",
+                    JSONArray().put(
+                        JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))
+                    )
                 )
-            )
+                // Gemini 3.x thinks before answering, which costs most of the latency here.
+                // Measured on this key: 3.05s default vs 2.52s with thinking held low.
+                // The task is a short summary, so deep reasoning buys us nothing.
+                .put(
+                    "generationConfig",
+                    JSONObject()
+                        .put("maxOutputTokens", 400)
+                        .put("temperature", 0.7)
+                        .put("thinkingConfig", JSONObject().put("thinkingLevel", "low"))
+                )
 
             val url = URL("$ENDPOINT/$model:generateContent")
             val conn = (url.openConnection() as HttpURLConnection).apply {

@@ -64,6 +64,12 @@ class InferenceManager(
 
     private val tag = "InferenceManager"
     private val mutex = Mutex()
+    /**
+     * Serialises every native decode. LiteRT-LM crashed with SIGSEGV in liblitertlm_jni
+     * when two conversations decoded on one Engine at once, or when a Conversation was
+     * closed while its decode was still running. One decode at a time, always.
+     */
+    private val inferenceMutex = Mutex()
     private var engine: Engine? = null
 
     private val _engineState = MutableStateFlow<EngineState>(EngineState.Uninitialized)
@@ -143,8 +149,10 @@ class InferenceManager(
                     tools = listOf(tool(CrustyTools())),
                     automaticToolCalling = false
                 )
-                val conversation = currentEngine.createConversation(conversationConfig)
-                return@withContext RealNegotiationSession(conversation)
+                val conversation = inferenceMutex.withLock {
+                    currentEngine.createConversation(conversationConfig)
+                }
+                return@withContext RealNegotiationSession(conversation, inferenceMutex)
             } catch (e: Exception) {
                 Log.e(tag, "Failed to create real conversation, falling back to simulated: ${e.message}")
             }
@@ -158,42 +166,45 @@ class InferenceManager(
      * Generates a one-shot throwaway response from Gemma without tools (e.g. for Weekly Wrapped coach's note).
      * Returns null if engine is not ready or if inference times out.
      */
-    suspend fun generateOneShot(prompt: String, timeoutMs: Long = 6000L): String? = withContext(dispatcher) {
-        if (_engineState.value !is EngineState.Ready) return@withContext null
-        val currentEngine = engine ?: return@withContext null
+    suspend fun generateOneShot(prompt: String, timeoutMs: Long = 6000L): String? =
+        withContext(dispatcher) {
+            if (_engineState.value !is EngineState.Ready) return@withContext null
+            val currentEngine = engine ?: return@withContext null
 
-        var conversation: Conversation? = null
-        try {
-            kotlinx.coroutines.withTimeoutOrNull(timeoutMs) {
-                val config = ConversationConfig(
-                    systemInstruction = Contents.of("You are Crusty, a thoughtful and concise on-device AI coach."),
-                    samplerConfig = SamplerConfig(topK = 40, topP = 0.9, temperature = 0.7),
-                    tools = emptyList(),
-                    automaticToolCalling = false
-                )
-                conversation = currentEngine.createConversation(config)
-                val fullText = StringBuilder()
-                conversation?.sendMessageAsync(Contents.of(prompt))?.collect { msg ->
-                    val text = msg.contents.toString()
-                    if (text.isNotEmpty()) {
-                        fullText.append(text)
+            // NB: no withTimeoutOrNull around the native call. Cancelling the coroutine
+            // does not stop the native decode, and the finally-block close() then freed a
+            // conversation that was still generating — a guaranteed SIGSEGV. Callers
+            // already render a fallback until this returns, so arriving late is harmless.
+            inferenceMutex.withLock {
+                var conversation: Conversation? = null
+                try {
+                    val config = ConversationConfig(
+                        systemInstruction = Contents.of(
+                            "You are Crusty, a thoughtful and concise on-device AI coach."
+                        ),
+                        samplerConfig = SamplerConfig(topK = 40, topP = 0.9, temperature = 0.7),
+                        tools = emptyList(),
+                        automaticToolCalling = false
+                    )
+                    conversation = currentEngine.createConversation(config)
+                    val fullText = StringBuilder()
+                    conversation.sendMessageAsync(Contents.of(prompt)).collect { msg ->
+                        val text = msg.contents.toString()
+                        if (text.isNotEmpty()) fullText.append(text)
                     }
+                    fullText.toString().trim().ifBlank { null }
+                } catch (e: Exception) {
+                    Log.w(tag, "generateOneShot failed: ${e.message}")
+                    null
+                } finally {
+                    try { conversation?.close() } catch (_: Exception) {}
                 }
-                val result = fullText.toString().trim()
-                result.ifBlank { null }
             }
-        } catch (e: Exception) {
-            Log.w(tag, "generateOneShot failed: ${e.message}")
-            null
-        } finally {
-            try {
-                conversation?.close()
-            } catch (_: Exception) {}
         }
-    }
 
     private class RealNegotiationSession(
-        private val conversation: Conversation
+        private val conversation: Conversation,
+        private val inferenceMutex: Mutex,
     ) : NegotiationSession {
         override val isSimulated = false
 
@@ -219,6 +230,7 @@ class InferenceManager(
             val marker = "propose_access"
 
             try {
+              inferenceMutex.withLock {
                 conversation.sendMessageAsync(Contents.of(plea + directive)).collect { responseMessage ->
                     val text = responseMessage.contents.toString()
                     if (text.isNotEmpty()) {
@@ -253,6 +265,8 @@ class InferenceManager(
                         }
                     }
                 }
+
+              }
 
                 if (!suppressing && buffer.length > shownChars) {
                     emit(NegotiationEvent.Token(buffer.substring(shownChars)))

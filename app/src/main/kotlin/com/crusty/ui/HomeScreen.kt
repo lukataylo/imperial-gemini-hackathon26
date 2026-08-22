@@ -56,6 +56,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.Image
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(
@@ -464,31 +465,72 @@ fun RecentGrantRow(grant: GrantHistoryItem, appName: String) {
             }
 
             AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 10.dp)) {
-                    Text(
-                        text = "Plea: \"${grant.plea}\"",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Column(
+                    // indent past the app icon so it reads as detail of this row
+                    modifier = Modifier.padding(start = 38.dp, top = 12.dp, end = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    DetailBlock(label = "They said", value = grant.plea)
+
                     if (grant.promise.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Promise: \"${grant.promise}\"",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        DetailBlock(label = "They promised", value = grant.promise)
                     }
+
                     if (grant.honoured != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val outcomeText = if (grant.honoured) "Honoured" else "Overran by ${grant.overranBy ?: 0} min"
-                        Text(
-                            text = "Outcome: $outcomeText",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (grant.honoured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
-                        )
+                        val kept = grant.honoured
+                        val overran = grant.overranBy ?: 0
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(
+                                        if (kept) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.tertiaryContainer
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = if (kept) "KEPT" else "BROKEN",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (kept) MaterialTheme.colorScheme.onPrimaryContainer
+                                            else MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                            if (!kept && overran > 0) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "stayed $overran min past the grant",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+
+/** A quiet uppercase label over a readable value — the expanded row used prefix-labelled
+ *  small grey text for everything, which gave the words you actually want to read the
+ *  same weight as the labels. */
+@Composable
+private fun DetailBlock(label: String, value: String) {
+    Column {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 0.8.sp
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = "\u201C${value.trim()}\u201D",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            lineHeight = 20.sp
+        )
     }
 }
