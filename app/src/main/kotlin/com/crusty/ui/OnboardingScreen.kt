@@ -73,11 +73,7 @@ fun OnboardingScreen(
     var watchedApps by remember {
         mutableStateOf(
             listOf(
-                WatchedApp("com.instagram.android", "Instagram", isWatched = true),
-                WatchedApp("com.zhiliaoapp.musically", "TikTok", isWatched = true),
-                WatchedApp("com.twitter.android", "X / Twitter", isWatched = true),
-                WatchedApp("com.reddit.frontpage", "Reddit", isWatched = true),
-                WatchedApp("com.google.android.youtube", "YouTube", isWatched = true)
+                *com.crusty.data.SUPPORTED_APPS.toTypedArray()
             )
         )
     }

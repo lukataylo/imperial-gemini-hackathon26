@@ -17,6 +17,17 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
+/** The apps Crusty can watch. Single source of truth — onboarding reads this too. */
+val SUPPORTED_APPS: List<WatchedApp> = listOf(
+    WatchedApp(packageName = "com.instagram.android", appName = "Instagram", isWatched = true),
+    WatchedApp(packageName = "com.zhiliaoapp.musically", appName = "TikTok", isWatched = true),
+    WatchedApp(packageName = "com.twitter.android", appName = "X / Twitter", isWatched = true),
+    WatchedApp(packageName = "com.reddit.frontpage", appName = "Reddit", isWatched = true),
+    WatchedApp(packageName = "com.google.android.youtube", appName = "YouTube", isWatched = true),
+    WatchedApp(packageName = "com.whatsapp", appName = "WhatsApp", isWatched = false),
+    WatchedApp(packageName = "com.google.android.gm", appName = "Gmail", isWatched = false)
+)
+
 @Serializable
 data class SettingsData(
     val rules: Rules = Rules(
@@ -32,13 +43,7 @@ data class SettingsData(
         )
     ),
     val userGoal: String = "stop losing evenings to reels",
-    val watchedApps: List<WatchedApp> = listOf(
-        WatchedApp(packageName = "com.instagram.android", appName = "Instagram", isWatched = true),
-        WatchedApp(packageName = "com.zhiliaoapp.musically", appName = "TikTok", isWatched = true),
-        WatchedApp(packageName = "com.twitter.android", appName = "X / Twitter", isWatched = true),
-        WatchedApp(packageName = "com.reddit.frontpage", appName = "Reddit", isWatched = true),
-        WatchedApp(packageName = "com.google.android.youtube", appName = "YouTube", isWatched = true)
-    ),
+    val watchedApps: List<WatchedApp> = SUPPORTED_APPS,
     val onboardingCompleted: Boolean = false,
     val interceptionEnabled: Boolean = true,
     val customModelPath: String? = null,
