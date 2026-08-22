@@ -10,3 +10,4 @@ Log blockers here with your task ID, make the most reasonable assumption, mark i
 | M3 Expressive components? | **Resolved — no** | `material3:1.3.1` predates them. Dynamic color, the part that carries the native-Pixel feel, works. See `03-UI-SPEC.md` |
 | JDK | **Resolved** | Java 21. `JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home` on this machine. Deliberately **not** committed to `gradle.properties` — machine-specific |
 | Rule-change cooldown was descoped for the one-day build | **Built anyway** | `DefaultPolicyEngine.scheduleRulesChange()` implements it: tightening applies immediately, loosening waits 2h. Covered by tests |
+| Avatar asset file | **Open** | Need avatar asset file from the team. Implemented canonical `CrustyAvatar` wrapper with placeholder marked `// PLACEHOLDER: swap for real avatar asset` |
