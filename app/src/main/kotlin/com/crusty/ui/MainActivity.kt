@@ -77,6 +77,59 @@ class MainActivity : ComponentActivity() {
                         ledger.grantRecords.lastOrNull { it.honoured == null && it.promise.isNotBlank() }
                     }
 
+                    val weeklyInsights = remember(ledger, settings.rules, settings.userGoal) {
+                        com.crusty.insights.InsightsEngine.computeWeekly(
+                            data = ledger,
+                            rules = settings.rules,
+                            userGoal = settings.userGoal,
+                            now = System.currentTimeMillis()
+                        )
+                    }
+                    val todayUsedMinutes: Int = remember(todayUsageMap) {
+                        todayUsageMap.values.sum()
+                    }
+                    val todayBudgetMinutes: Int = remember(settings.watchedApps, settings.rules.dailyBudgetMinutes) {
+                        settings.watchedApps.filter { it.isWatched }.sumOf { app ->
+                            settings.rules.dailyBudgetMinutes[app.packageName] ?: 60
+                        }
+                    }
+                    val nowHour = remember {
+                        java.time.ZonedDateTime.now().hour
+                    }
+                    val deterministicLine = remember(weeklyInsights, todayUsedMinutes, todayBudgetMinutes, nowHour) {
+                        com.crusty.insights.reflectionLine(
+                            insights = weeklyInsights,
+                            todayUsedMinutes = todayUsedMinutes,
+                            todayBudgetMinutes = todayBudgetMinutes,
+                            nowHour = nowHour
+                        )
+                    }
+
+                    var gemmaReflection by remember { mutableStateOf<String?>(null) }
+
+                    androidx.compose.runtime.LaunchedEffect(weeklyInsights, todayUsedMinutes, todayBudgetMinutes) {
+                        val facts = "Negotiations: ${weeklyInsights.negotiationsCount}, " +
+                                "Promises kept: ${(weeklyInsights.overallHonourRate * 100).toInt()}%, " +
+                                "Signature technique: '${weeklyInsights.signatureTechnique.archetype.title}', " +
+                                "Average overrun: ${weeklyInsights.overrunProfile.avgOverrunMinutes.toInt()}m."
+                        val prompt = "You are Crusty, the gatekeeper of this person's screen time. " +
+                                "You take the job as seriously as a border checkpoint, keep meticulous records, and cite exact numbers. " +
+                                "You are polite, deadpan, and devastating. Never describe yourself or your appearance. " +
+                                "No shame, no exclamation marks. Facts this week: $facts. " +
+                                "Write ONE funny sentence under 90 characters."
+                        val generated = appContainer.inferenceManager.generateOneShot(prompt, timeoutMs = 3000L)
+                        if (generated != null) {
+                            val trimmed = generated.trim().removeSurrounding("\"")
+                            val hasEmoji = trimmed.any {
+                                val type = Character.getType(it).toByte()
+                                type == Character.SURROGATE || type == Character.OTHER_SYMBOL
+                            }
+                            if (trimmed.isNotBlank() && trimmed.length <= 120 && !hasEmoji) {
+                                gemmaReflection = trimmed
+                            }
+                        }
+                    }
+
                     HomeScreen(
                         watchedApps = settings.watchedApps,
                         rules = settings.rules,
@@ -118,7 +171,8 @@ class MainActivity : ComponentActivity() {
                                 }
                                 insightLoading = false
                             }
-                        }
+                        },
+                        reflectionText = gemmaReflection ?: deterministicLine
                     )
                 }
             }
