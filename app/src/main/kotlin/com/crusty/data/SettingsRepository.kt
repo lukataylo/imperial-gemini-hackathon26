@@ -24,8 +24,8 @@ val SUPPORTED_APPS: List<WatchedApp> = listOf(
     WatchedApp(packageName = "com.twitter.android", appName = "X / Twitter", isWatched = true),
     WatchedApp(packageName = "com.reddit.frontpage", appName = "Reddit", isWatched = true),
     WatchedApp(packageName = "com.google.android.youtube", appName = "YouTube", isWatched = true),
-    WatchedApp(packageName = "com.whatsapp", appName = "WhatsApp", isWatched = false),
-    WatchedApp(packageName = "com.google.android.gm", appName = "Gmail", isWatched = false)
+    WatchedApp(packageName = "com.whatsapp", appName = "WhatsApp", isWatched = true),
+    WatchedApp(packageName = "com.google.android.gm", appName = "Gmail", isWatched = true)
 )
 
 @Serializable

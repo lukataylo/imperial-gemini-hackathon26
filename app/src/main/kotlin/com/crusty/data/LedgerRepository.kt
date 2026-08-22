@@ -254,6 +254,58 @@ class JsonLedgerRepository(
 
         val sampleGrants = listOf(
             GrantHistoryItem(
+                id = 16L,
+                appId = "com.whatsapp",
+                requestedAt = now - 6 * 3600 * 1000L,
+                plea = "need to answer the group about Saturday",
+                proposedMinutes = 10,
+                grantedMinutes = 6,
+                mode = AccessMode.FULL,
+                promise = "answer the group and put it down",
+                endedAt = now - 6 * 3600 * 1000L + 6 * 60 * 1000L,
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 17L,
+                appId = "com.whatsapp",
+                requestedAt = timeAt(2, 23, 5),
+                plea = "just seeing who messaged",
+                proposedMinutes = 10,
+                grantedMinutes = 5,
+                mode = AccessMode.GRAYSCALE,
+                promise = "one look, then bed",
+                endedAt = timeAt(2, 23, 34),
+                overranBy = 24,
+                honoured = false
+            ),
+            GrantHistoryItem(
+                id = 18L,
+                appId = "com.google.android.gm",
+                requestedAt = now - 9 * 3600 * 1000L,
+                plea = "checking if the booking confirmation came through",
+                proposedMinutes = 5,
+                grantedMinutes = 4,
+                mode = AccessMode.FULL,
+                promise = "find the confirmation and close it",
+                endedAt = now - 9 * 3600 * 1000L + 4 * 60 * 1000L,
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 19L,
+                appId = "com.google.android.gm",
+                requestedAt = timeAt(3, 21, 40),
+                plea = "quick inbox check before bed",
+                proposedMinutes = 15,
+                grantedMinutes = 8,
+                mode = AccessMode.GRAYSCALE,
+                promise = "inbox only, no replies",
+                endedAt = timeAt(3, 22, 11),
+                overranBy = 23,
+                honoured = false
+            ),
+            GrantHistoryItem(
                 id = 1L,
                 appId = "com.reddit.frontpage",
                 requestedAt = now - 25 * 60 * 1000L,
@@ -451,6 +503,8 @@ class JsonLedgerRepository(
         )
 
         val usage = listOf(
+            UsageSample(appId = "com.whatsapp", day = todayStr, minutes = 18),
+            UsageSample(appId = "com.google.android.gm", day = todayStr, minutes = 12),
             UsageSample(appId = "com.reddit.frontpage", day = todayStr, minutes = 47),
             UsageSample(appId = "com.google.android.youtube", day = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 52),
             UsageSample(appId = "com.twitter.android", day = today.minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 45),
