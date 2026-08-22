@@ -78,7 +78,7 @@ class ModelDownloader(
                         out.write(buffer, 0, bytesRead)
                         downloadedBytes += bytesRead
 
-                        val percent = ((downloadedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
+                        val percent = (if (totalBytes > 0) (downloadedBytes * 100) / totalBytes else 0L).toInt().coerceIn(0, 100)
                         if (percent != lastEmittedPercent) {
                             lastEmittedPercent = percent
                             emit(DownloadState.Downloading(downloadedBytes, totalBytes, percent))

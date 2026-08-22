@@ -117,18 +117,21 @@ class UsageInsights(
         var lastError = "Network error"
 
         for (candidateModel in models) {
-            // 503/429 are common and transient under load — back off before giving up.
-            repeat(3) { attempt ->
-                if (attempt > 0) kotlinx.coroutines.delay(1500L * attempt)
+            var attempt = 0
+            while (attempt < 3) {
+                if (attempt > 0) kotlinx.coroutines.delay(1200L * attempt)
                 when (val r = callOnce(candidateModel, prompt)) {
                     is Result.Success -> return@withContext r
                     is Result.Failure -> {
                         lastError = r.message
-                        if (!r.message.contains("503") && !r.message.contains("429")) {
-                            return@repeat  // not a load problem: try the next model
-                        }
+                        val transient = r.message.contains("503") || r.message.contains("429")
+                        // Anything else (bad key, unknown model, DNS) will not improve by
+                        // repeating — move to the next model instead of burning three
+                        // 15-second timeouts on the same one.
+                        if (!transient) break
+                        attempt++
                     }
-                    else -> {}
+                    else -> break
                 }
             }
         }
@@ -148,8 +151,8 @@ class UsageInsights(
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
-                connectTimeout = 15_000
-                readTimeout = 60_000
+                connectTimeout = 6_000
+                readTimeout = 45_000
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("x-goog-api-key", apiKey)
             }

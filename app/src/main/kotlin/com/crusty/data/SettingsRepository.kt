@@ -1,6 +1,7 @@
 package com.crusty.data
 
 import android.content.Context
+import com.crusty.model.ModelVariant
 import com.crusty.model.Rules
 import com.crusty.model.TimeWindow
 import com.crusty.model.WatchedApp
@@ -47,6 +48,7 @@ data class SettingsData(
     val onboardingCompleted: Boolean = false,
     val interceptionEnabled: Boolean = true,
     val customModelPath: String? = null,
+    val modelVariantId: String = "E2B",
 )
 
 interface SettingsRepository {
@@ -64,6 +66,10 @@ interface SettingsRepository {
     suspend fun setInterceptionEnabled(enabled: Boolean)
     suspend fun getCustomModelPath(): String?
     suspend fun setCustomModelPath(path: String?)
+
+    suspend fun setModelVariant(variant: ModelVariant)
+
+    fun getModelVariant(): ModelVariant
 }
 
 class JsonSettingsRepository(
@@ -155,6 +161,14 @@ class JsonSettingsRepository(
     override suspend fun getCustomModelPath(): String? = mutex.withLock {
         _settingsData.value.customModelPath
     }
+
+    override suspend fun setModelVariant(variant: ModelVariant): Unit = mutex.withLock {
+        _settingsData.value = _settingsData.value.copy(modelVariantId = variant.id)
+        persistLocked()
+    }
+
+    override fun getModelVariant(): ModelVariant =
+        ModelVariant.fromId(_settingsData.value.modelVariantId)
 
     override suspend fun setCustomModelPath(path: String?): Unit = mutex.withLock {
         _settingsData.value = _settingsData.value.copy(customModelPath = path)

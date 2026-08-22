@@ -42,6 +42,11 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.crusty.model.ModelVariant
+import com.crusty.llm.DefaultModelProvider
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,7 +154,68 @@ fun SettingsScreen(
 
             // Model Engine Status
             item {
-                Card(
+                Text(
+                text = "Model",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            ) {
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                    val provider = appContainer.modelProvider
+                    ModelVariant.entries.forEach { variant ->
+                        val selected = settingsState.modelVariantId == variant.id
+                        val downloaded = (provider as? DefaultModelProvider)?.isDownloaded(variant) ?: false
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = downloaded) {
+                                    scope.launch {
+                                        appContainer.settingsRepository.setModelVariant(variant)
+                                        appContainer.inferenceManager.reinitialize()
+                                    }
+                                }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selected,
+                                enabled = downloaded,
+                                onClick = {
+                                    scope.launch {
+                                        appContainer.settingsRepository.setModelVariant(variant)
+                                        appContainer.inferenceManager.reinitialize()
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = variant.label,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (downloaded) variant.blurb
+                                           else "Not downloaded (${variant.approxBytes / 1_000_000_000.0} GB)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -164,7 +230,7 @@ fun SettingsScreen(
                         val statusText = when (val s = engineState) {
                             is EngineState.Ready -> "Ready (${s.backend} acceleration)"
                             is EngineState.Initializing -> "Initializing engine…"
-                            is EngineState.NoModel -> "Ready (Simulated mode active)"
+                            is EngineState.NoModel -> "No model on device — scripted fallback"
                             is EngineState.Error -> "Error: ${s.message}"
                             is EngineState.Uninitialized -> "Standing by"
                         }

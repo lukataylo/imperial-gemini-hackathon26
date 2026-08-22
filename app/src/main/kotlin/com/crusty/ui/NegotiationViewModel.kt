@@ -80,13 +80,29 @@ class NegotiationViewModel(
             )
 
             if (denialReason == null) {
+                // Crusty opens. Derived, not generated, so it is on screen instantly
+                // rather than after a model round-trip.
+                val hour = java.time.Instant.ofEpochMilli(now)
+                    .atZone(java.time.ZoneId.systemDefault()).hour
+                val opener = com.crusty.llm.OpeningLines.opener(
+                    appName = appName,
+                    snapshot = snapshot,
+                    hourOfDay = hour,
+                    budgetMinutes = dailyBudget,
+                )
+                _uiState.value = _uiState.value.copy(
+                    messages = listOf(ChatMessage(isUser = false, text = opener))
+                )
+
                 try {
                     // Close any previous session first — LaunchedEffect re-runs on rotation and
                     // silently leaked a native Conversation (and its KV cache) each time.
                     negotiationSession?.close()
                     negotiationSession = inferenceManager.createNegotiationSession(appId, appName, now)
-                    val simulated = inferenceManager.engineState.value !is
-                        com.crusty.llm.EngineState.Ready
+                    // Ask the session itself. Inferring from engineState missed the case
+                    // where the engine is Ready but createConversation threw and we
+                    // silently fell back to the script.
+                    val simulated = negotiationSession?.isSimulated ?: true
                     _uiState.value = _uiState.value.copy(isReady = true, isSimulated = simulated)
                 } catch (e: Exception) {
                     _uiState.value = _uiState.value.copy(
@@ -150,10 +166,19 @@ class NegotiationViewModel(
                         // Run through deterministic policy clamp
                         val grant = policyEngine.clamp(event.proposal, _uiState.value.appId, now, snapshot, rules)
 
+                        // A denial, or a proposal the policy engine refused, used to
+                        // produce a completely blank turn: no card, no words, nothing.
+                        val extraMessages = if (grant == null) {
+                            val reason = event.proposal.rationale.trim()
+                                .ifBlank { "Not this time." }
+                            listOf(ChatMessage(isUser = false, text = reason))
+                        } else emptyList()
+
                         _uiState.value = _uiState.value.copy(
                             currentProposal = event.proposal,
                             clampedGrant = grant,
-                            offerMadeAt = now
+                            offerMadeAt = now,
+                            messages = _uiState.value.messages + extraMessages
                         )
                     }
 

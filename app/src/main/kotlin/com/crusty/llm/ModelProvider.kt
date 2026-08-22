@@ -2,6 +2,7 @@ package com.crusty.llm
 
 import android.content.Context
 import com.crusty.data.SettingsRepository
+import com.crusty.model.ModelVariant
 import java.io.File
 
 interface ModelProvider {
@@ -24,13 +25,16 @@ class DefaultModelProvider(
         // NOT load — it lacks TF_LITE_PREFILL_DECODE. Use this standard build.
     }
 
-    override fun getTargetModelFile(): File {
-        val modelsDir = File(context.filesDir, "models")
-        if (!modelsDir.exists()) {
-            modelsDir.mkdirs()
-        }
-        return File(modelsDir, MODEL_FILENAME)
-    }
+    private fun modelsDir(): File =
+        File(context.filesDir, "models").apply { if (!exists()) mkdirs() }
+
+    /** The file for a specific variant, downloaded or not. */
+    fun fileFor(variant: ModelVariant): File = File(modelsDir(), variant.fileName)
+
+    fun isDownloaded(variant: ModelVariant): Boolean =
+        fileFor(variant).let { it.exists() && it.length() > 0 }
+
+    override fun getTargetModelFile(): File = fileFor(settingsRepository.getModelVariant())
 
     override suspend fun getModelFile(): File? {
         // 1. Check custom path if set
@@ -42,10 +46,12 @@ class DefaultModelProvider(
             }
         }
 
-        // 2. Check standard app files directory
-        val targetFile = getTargetModelFile()
-        if (targetFile.exists() && targetFile.length() > 0) {
-            return targetFile
+        // 2. The chosen variant, then any other variant that is present, so the app
+        //    still works if the user picked one they have not downloaded yet.
+        val chosen = settingsRepository.getModelVariant()
+        fileFor(chosen).let { if (it.exists() && it.length() > 0) return it }
+        ModelVariant.entries.forEach { v ->
+            fileFor(v).let { if (it.exists() && it.length() > 0) return it }
         }
 
         // 3. Check common adb push paths for fast development

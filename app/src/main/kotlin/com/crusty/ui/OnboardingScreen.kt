@@ -443,7 +443,9 @@ fun OnboardingScreen(
                             val rules = Rules(
                                 maxMinutesPerGrant = maxPerGrant.toInt(),
                                 maxGrantsPerDay = 4,
-                                minGapMinutes = 20,
+                                // 0 on purpose: a gap here turns the re-open into a flat
+                        // denial with no agent, which is not the product.
+                        minGapMinutes = 0,
                                 dailyBudgetMinutes = budgets,
                                 blackoutWindows = listOf(TimeWindow(1410, 420))
                             )

@@ -68,7 +68,16 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     val todayUsageMap = remember(ledger.usageSamples) {
-                        ledger.usageSamples.associate { it.appId to it.minutes }
+                        run {
+                            // associate{} ignored UsageSample.day and collapsed duplicate
+                            // appIds last-wins, so "today" showed a figure from days ago.
+                            val today = java.time.LocalDate.now()
+                                .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            ledger.usageSamples
+                                .filter { it.day == today }
+                                .groupBy { it.appId }
+                                .mapValues { (_, v) -> v.sumOf { it.minutes } }
+                        }
                     }
                     val recentGrants = remember(ledger.grantRecords) {
                         ledger.grantRecords.sortedByDescending { it.requestedAt }.take(10)

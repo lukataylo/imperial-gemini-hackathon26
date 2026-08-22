@@ -148,3 +148,36 @@ data class WatchedApp(
     val appName: String,
     val isWatched: Boolean = true,
 )
+
+
+/** Which on-device model Crusty negotiates with. */
+@Serializable
+enum class ModelVariant(
+    val id: String,
+    val label: String,
+    val fileName: String,
+    val url: String,
+    val approxBytes: Long,
+    val blurb: String,
+) {
+    E2B(
+        id = "E2B",
+        label = "Gemma 4 E2B",
+        fileName = "gemma-4-E2B-it.litertlm",
+        url = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+        approxBytes = 2_590_000_000L,
+        blurb = "Faster. Lower latency at the gate.",
+    ),
+    E4B(
+        id = "E4B",
+        label = "Gemma 4 E4B",
+        fileName = "gemma-4-E4B-it.litertlm",
+        url = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm",
+        approxBytes = 3_660_000_000L,
+        blurb = "Slower, but far better at holding a line and calling tools.",
+    );
+
+    companion object {
+        fun fromId(id: String?): ModelVariant = entries.firstOrNull { it.id == id } ?: E2B
+    }
+}

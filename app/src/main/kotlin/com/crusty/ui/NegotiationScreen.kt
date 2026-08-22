@@ -83,6 +83,15 @@ fun NegotiationScreen(
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
+        uiState.errorMessage?.let { err ->
+            Text(
+                text = err,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         if (uiState.isSimulated) {
             // Never let the scripted fallback pass for the on-device model.
             Text(
@@ -171,7 +180,7 @@ fun NegotiationScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Empty state: Crusty waits for you to say something.
-        if (uiState.messages.isEmpty()) {
+        if (uiState.messages.none { it.isUser }) {
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -206,7 +215,7 @@ fun NegotiationScreen(
         }
 
         // Chat messages
-        if (uiState.messages.isNotEmpty() || uiState.clampedGrant != null) LazyColumn(
+        if (uiState.messages.any { it.isUser } || uiState.clampedGrant != null) LazyColumn(
             state = listState,
             modifier = Modifier
                 .weight(1f)

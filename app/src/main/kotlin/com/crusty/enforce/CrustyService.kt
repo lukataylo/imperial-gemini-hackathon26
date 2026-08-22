@@ -56,6 +56,8 @@ class CrustyService : Service() {
 
         val container = (application as? CrustyApp)?.container
         if (container != null) {
+            // A previous run may have been killed mid-grant with the display still grey.
+            container.grayscaleOverlayManager.clearStaleGrayscale()
             // Warm-load the model engine immediately
             serviceScope.launch {
                 container.inferenceManager.initialize()

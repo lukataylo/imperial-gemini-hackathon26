@@ -82,7 +82,7 @@ object InsightsEngine {
         if (words.size > 1) {
             val nonFirstWords = words.drop(1)
             val ignoredKeywords = setOf(
-                "I", "The", "A", "An", "Please", "Thanks", "Instagram", "WhatsApp", "YouTube",
+                "I", "The", "A", "An", "Please", "Thanks", "Instagram", "WhatsApp", "YouTube", "Gmail",
                 "Slack", "Reddit", "Twitter", "TikTok", "Chrome", "Google", "Crusty", "Sunday",
                 "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
             )

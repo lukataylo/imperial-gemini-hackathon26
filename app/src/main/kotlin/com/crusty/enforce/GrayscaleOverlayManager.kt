@@ -32,12 +32,27 @@ class GrayscaleOverlayManager(private val context: Context) {
      */
     private fun tryEnableDaltonizer(): Boolean = try {
         val cr = context.contentResolver
-        Settings.Secure.putInt(cr, "accessibility_display_daltonizer_enabled", 1)
-        Settings.Secure.putInt(cr, "accessibility_display_daltonizer", 0) // 0 = monochromacy
+        // Mark active BEFORE touching the system, so a throw between the two writes
+        // still leaves us able to turn it back off. Getting this backwards can strand
+        // the whole phone in greyscale with no in-app way out.
         daltonizerActive = true
+        Settings.Secure.putInt(cr, "accessibility_display_daltonizer", 0) // 0 = monochromacy
+        Settings.Secure.putInt(cr, "accessibility_display_daltonizer_enabled", 1)
         true
     } catch (_: Exception) {
+        disableDaltonizer()
         false
+    }
+
+    /** Clear any greyscale left behind by a process that died mid-grant. */
+    fun clearStaleGrayscale() {
+        try {
+            Settings.Secure.putInt(
+                context.contentResolver,
+                "accessibility_display_daltonizer_enabled", 0
+            )
+        } catch (_: Exception) {}
+        daltonizerActive = false
     }
 
     private fun disableDaltonizer() {

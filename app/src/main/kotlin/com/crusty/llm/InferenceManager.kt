@@ -48,6 +48,9 @@ sealed interface NegotiationEvent {
 
 interface NegotiationSession : AutoCloseable {
     fun sendPlea(plea: String): Flow<NegotiationEvent>
+
+    /** True when this is the scripted fallback rather than on-device Gemma. */
+    val isSimulated: Boolean get() = false
 }
 
 class InferenceManager(
@@ -65,6 +68,16 @@ class InferenceManager(
 
     private val _engineState = MutableStateFlow<EngineState>(EngineState.Uninitialized)
     val engineState: StateFlow<EngineState> = _engineState.asStateFlow()
+
+    /** Close the current engine and load whatever variant is now selected. */
+    suspend fun reinitialize() = withContext(dispatcher) {
+        mutex.withLock {
+            try { engine?.close() } catch (_: Exception) {}
+            engine = null
+            _engineState.value = EngineState.Uninitialized
+        }
+        initialize()
+    }
 
     suspend fun initialize() = withContext(dispatcher) {
         mutex.withLock {
@@ -182,6 +195,8 @@ class InferenceManager(
     private class RealNegotiationSession(
         private val conversation: Conversation
     ) : NegotiationSession {
+        override val isSimulated = false
+
         private var turn = 0
 
         override fun sendPlea(plea: String): Flow<NegotiationEvent> = flow {
@@ -270,6 +285,7 @@ class InferenceManager(
         private val snapshot: LedgerSnapshot,
         private val rules: Rules
     ) : NegotiationSession {
+        override val isSimulated = true
         private var turn = 0
 
         override fun sendPlea(plea: String): Flow<NegotiationEvent> = flow {
@@ -303,7 +319,9 @@ class InferenceManager(
             val tooShort = lower.split(" ").size < 3 && !looksSpecific
 
             // Push back once on the opening move unless they were already concrete.
-            val pushBack = (looksVague || tooShort || (turn == 1 && !looksSpecific))
+            // Only the opening move gets the benefit of the doubt. Re-testing vague
+            // markers every turn meant one stray "quick" could never be recovered from.
+            val pushBack = turn == 1 && (looksVague || tooShort || !looksSpecific)
 
             if (pushBack) {
                 val reply = when {
@@ -390,9 +408,14 @@ class InferenceManager(
         }
 
         fun parseProposalFromText(text: String): Proposal? {
-            val regex = Regex("""propose_access\s*\((.*?)\)""", RegexOption.DOT_MATCHES_ALL)
+            // Must contain real arguments. The system prompt itself mentions the literal
+            // "propose_access(...)" when telling the model not to type it — without this
+            // guard, the model merely quoting that rule minted a phantom 10-minute offer.
+            val regex = Regex("""propose_access\s*\(([^)]*[=:][^)]*)\)""", RegexOption.DOT_MATCHES_ALL)
             val match = regex.find(text) ?: return null
             val content = match.groupValues[1]
+            // No explicit duration means we are not confident enough to invent one.
+            if (!Regex("""minutes\s*[=:]\s*-?\d+""").containsMatchIn(content)) return null
 
             var minutes = 10
             var mode = AccessMode.GRAYSCALE
