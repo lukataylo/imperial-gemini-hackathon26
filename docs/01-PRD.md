@@ -19,7 +19,7 @@ The sixth beat is the one that wins. Protect it.
 
 ## Track
 
-**Track 2 — Best Use of Gemma.** Privacy-preserving, offline-capable, edge-optimised, Gemma 4 open weights running locally via LiteRT. Track 3 (Hybrid) is a decision at the 14:30 gate — see `06-SUBMISSION.md`.
+**Track 3 — Hybrid Gemini + Gemma.** On-device Gemma 4 negotiation paired with Gemini 3.7 Flash weekly habit reflections.
 
 ## In scope today
 

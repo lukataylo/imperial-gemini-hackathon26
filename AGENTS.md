@@ -6,7 +6,7 @@ Standing instructions for any agent working in this repo. Read this first, then 
 
 **Gatekeeper** — an Android app that blocks distracting apps, but lets the user *negotiate* their way in by arguing with an on-device Gemma 4 agent. Nothing leaves the phone.
 
-Built for the **UK AI Agents Lab hackathon at Imperial**, Track 2 (Best Use of Gemma). **Submission deadline is 17:30 GMT the same day.** Every scope decision serves that.
+Built for the **UK AI Agents Lab hackathon at Imperial**, Track 3 (Hybrid Gemini + Gemma). **Submission deadline is 17:30 GMT the same day.** Every scope decision serves that.
 
 ## Read order
 
