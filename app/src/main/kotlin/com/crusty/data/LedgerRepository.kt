@@ -252,6 +252,13 @@ class JsonLedgerRepository(
                 .toEpochMilli()
         }
 
+        val seedRules = settingsRepository.getRules()
+        // fraction of the app's own daily budget, leaving deliberate headroom to negotiate
+        fun todayFor(appId: String, fraction: Double): Int {
+            val budget = seedRules.dailyBudgetMinutes[appId] ?: 60
+            return (budget * fraction).toInt().coerceAtLeast(1)
+        }
+
         val sampleGrants = listOf(
             GrantHistoryItem(
                 id = 16L,
@@ -503,9 +510,13 @@ class JsonLedgerRepository(
         )
 
         val usage = listOf(
-            UsageSample(appId = "com.whatsapp", day = todayStr, minutes = 18),
-            UsageSample(appId = "com.google.android.gm", day = todayStr, minutes = 12),
-            UsageSample(appId = "com.reddit.frontpage", day = todayStr, minutes = 47),
+            // TODAY's figures are scaled to whatever budget the user actually set in
+            // onboarding. Hardcoding 47 against a 30-minute budget left the demo app
+            // already BUDGET_EXHAUSTED, which turns the first tap into a flat denial
+            // with no negotiation at all.
+            UsageSample(appId = "com.whatsapp", day = todayStr, minutes = todayFor("com.whatsapp", 0.35)),
+            UsageSample(appId = "com.google.android.gm", day = todayStr, minutes = todayFor("com.google.android.gm", 0.25)),
+            UsageSample(appId = "com.reddit.frontpage", day = todayStr, minutes = todayFor("com.reddit.frontpage", 0.45)),
             UsageSample(appId = "com.google.android.youtube", day = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 52),
             UsageSample(appId = "com.twitter.android", day = today.minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 45),
             UsageSample(appId = "com.reddit.frontpage", day = today.minusDays(3).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 58),
