@@ -1,8 +1,8 @@
 # Crusty
 
-An Android app blocker you negotiate with — powered by on-device Gemma 4.
+An Android app blocker you negotiate with — powered by on-device Gemma 4 and cloud Gemini 3.7 Flash.
 
-Crusty stops you from opening distracting apps, but instead of a hard block, it starts a conversation. State your reason for opening the app. Crusty asks clarifying questions, remembers whether you kept your previous promises, and offers the minimal pass required — like 10 minutes in grayscale to send a single reply.
+Crusty stops you from opening distracting apps, but instead of a hard block, it starts a conversation. Crusty opens the dialogue instantly, asks clarifying questions, remembers whether you kept your previous promises, and offers the minimal pass required — like 10 minutes in grayscale to send a single reply.
 
 Built for the **UK AI Agents Lab Hackathon at Imperial College London** (Track 3 — Hybrid Gemini + Gemma).
 
@@ -10,9 +10,10 @@ Built for the **UK AI Agents Lab Hackathon at Imperial College London** (Track 3
 
 ## How It Works
 
-1. **100% On-Device:** Runs Gemma 4 E2B via LiteRT-LM locally on your phone. No API keys, no external network calls, and fully functional in airplane mode.
+1. **Instant Opening Lines & 100% Local Negotiation:** Uses context-derived opening lines (`OpeningLines.kt`) to start the conversation with zero latency. Runs Gemma 4 E2B locally on-device via LiteRT-LM with no network required for negotiations, operating fully in airplane mode.
 2. **Model Proposes, Policy Decides:** The model never has final authority. Gemma negotiates with you and calls `propose_access`. A deterministic, pure-Kotlin policy engine (`PolicyEngine.clamp()`) evaluates that proposal against hard limits you set while calm.
 3. **Jailbreak Proof:** Even if you prompt-inject the model into granting 8 hours of screen time, `PolicyEngine.clamp()` caps the grant to your preset maximum (e.g. 15 minutes) or rejects it entirely.
+4. **Hybrid Weekly Reflections (Gemini 3.7 Flash):** Opt-in weekly behavioral reflections (`UsageInsights.kt`) analyze anonymized habit patterns. Personal free-text pleas and promises never leave the device.
 
 ---
 
@@ -20,20 +21,22 @@ Built for the **UK AI Agents Lab Hackathon at Imperial College London** (Track 3
 
 ```mermaid
 flowchart TD
-    A[User opens Instagram] --> B[AccessibilityService<br/>detects foreground app]
+    A[User opens watched app] --> B[CrustyAccessibilityService<br/>detects foreground app]
     B --> C{PolicyEngine.evaluate<br/>pure Kotlin}
     C -->|active grant| Z[Allow access]
     C -->|blackout / budget spent| D[Deny access]
     C -->|negotiable| E[BlockActivity]
-    E --> F[Gemma 4 E2B<br/>LiteRT-LM on-device]
-    F -->|streams response| E
-    F --> G[Tool call: propose_access]
-    G --> H{PolicyEngine.clamp<br/>pure Kotlin}
-    H -->|clamped to limits| I[Grant: 10 min, grayscale]
-    H -->|rejected| D
-    I --> J[Timed pass + countdown notification]
-    J --> K[Ledger: record promise & outcome]
-    K -.->|history digest| F
+    E -->|instant opener| F[OpeningLines.kt]
+    E --> G[Gemma 4 E2B<br/>LiteRT-LM on-device]
+    G -->|streams response| E
+    G --> H[Tool call: propose_access]
+    H --> I{PolicyEngine.clamp<br/>pure Kotlin}
+    I -->|clamped to limits| J[Grant: 10 min, grayscale]
+    I -->|rejected| D
+    J --> K[Timed pass + countdown notification]
+    K --> L[LedgerRepository: record promise & outcome]
+    L -.->|history digest| G
+    L -.->|anonymised summary| M[Gemini 3.7 Flash<br/>Weekly Insights]
 ```
 
 > **Core Safety Invariant:** Gemma only generates proposals. The pure-Kotlin policy engine owns the decision diamonds.
@@ -71,7 +74,7 @@ On first launch, enable the following Android permissions:
 
 ## Testing
 
-Run unit tests on the JVM (includes 25 tests verifying `PolicyEngine` invariants and adversarial jailbreak resistance):
+Run unit tests on the JVM (includes 25+ tests verifying `PolicyEngine` invariants, adversarial jailbreak resistance, and `ReflectionsTest`):
 
 ```bash
 ./gradlew :app:testDebugUnitTest
@@ -92,6 +95,7 @@ For AI agents working on this repo, read [`AGENTS.md`](AGENTS.md) first.
 | [`docs/04-BUILD-PLAN.md`](docs/04-BUILD-PLAN.md) | Hour-by-hour build milestones |
 | [`docs/05-PROMPTS.md`](docs/05-PROMPTS.md) | System prompt engineering, tool schemas, and evals |
 | [`docs/06-SUBMISSION.md`](docs/06-SUBMISSION.md) | Hackathon submission deliverables and video outline |
+| [`docs/SUBMISSION_WRITEUP.md`](docs/SUBMISSION_WRITEUP.md) | Hackathon submission write-up document |
 
 ---
 
