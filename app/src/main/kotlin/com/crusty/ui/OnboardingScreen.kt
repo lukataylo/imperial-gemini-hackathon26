@@ -62,6 +62,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun OnboardingScreen(
@@ -200,14 +201,32 @@ fun OnboardingScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = app.appName,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                    AppIcon(
+                                        packageName = app.packageName,
+                                        size = 36.dp,
+                                        fallbackLabel = app.appName
                                     )
+                                    Spacer(modifier = Modifier.width(14.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = app.appName,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (!isAppInstalled(
+                                                LocalContext.current.packageManager,
+                                                app.packageName
+                                            )
+                                        ) {
+                                            Text(
+                                                text = "Not installed",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
                                     Checkbox(
                                         checked = app.isWatched,
                                         onCheckedChange = { checked ->
