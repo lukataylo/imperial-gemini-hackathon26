@@ -90,6 +90,12 @@ class MainActivity : ComponentActivity() {
                                 appContainer.ledgerRepository.seedDemoData()
                             }
                         },
+                        onResetLedger = {
+                            scope.launch {
+                                appContainer.ledgerRepository.clearLedger()
+                                insight = null
+                            }
+                        },
                         onTestNegotiation = { appId ->
                             BlockActivity.launch(this@MainActivity, appId)
                         },

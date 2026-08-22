@@ -55,6 +55,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.Image
+import androidx.compose.material3.HorizontalDivider
 
 @Composable
 fun HomeScreen(
@@ -66,6 +67,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenWrapped: () -> Unit,
     onSeedDemoData: () -> Unit,
+    onResetLedger: () -> Unit = {},
     onTestNegotiation: (String) -> Unit,
     insight: String? = null,
     insightLoading: Boolean = false,
@@ -324,8 +326,32 @@ fun HomeScreen(
                 }
             }
 
-            items(recentGrants, key = { it.id }) { grant ->
-                RecentGrantRow(grant = grant, appName = watchedApps.firstOrNull { it.packageName == grant.appId }?.appName ?: grant.appId)
+            if (recentGrants.isNotEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    ) {
+                        Column {
+                            recentGrants.forEachIndexed { index, grant ->
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 54.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHighest
+                                    )
+                                }
+                                RecentGrantRow(
+                                    grant = grant,
+                                    appName = watchedApps.firstOrNull { it.packageName == grant.appId }?.appName
+                                        ?: grant.appId
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             // Section 4: Demo Tools
@@ -335,6 +361,16 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    TextButton(
+                        onClick = onResetLedger,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            "Reset ledger",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     TextButton(
                         onClick = onSeedDemoData,
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -373,14 +409,12 @@ fun RecentGrantRow(grant: GrantHistoryItem, appName: String) {
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
     val timeStr = timeFormatter.format(Instant.ofEpochMilli(grant.requestedAt))
 
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable { expanded = !expanded }
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically

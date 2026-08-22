@@ -43,6 +43,9 @@ interface LedgerRepository {
     suspend fun addUsageMinutes(appId: String, day: String, minutes: Int)
     suspend fun getRecentGrants(limit: Int = 10): List<GrantHistoryItem>
     suspend fun seedDemoData(userGoal: String = "stop losing evenings to reels")
+
+    /** Wipe all grants, usage and any active pass. Settings and the user's goal survive. */
+    suspend fun clearLedger()
     suspend fun clearAll()
 }
 
@@ -228,6 +231,11 @@ class JsonLedgerRepository(
 
     override suspend fun getRecentGrants(limit: Int): List<GrantHistoryItem> = mutex.withLock {
         _ledgerData.value.grantRecords.sortedByDescending { it.requestedAt }.take(limit)
+    }
+
+    override suspend fun clearLedger(): Unit = mutex.withLock {
+        _ledgerData.value = LedgerData()
+        persistLocked()
     }
 
     override suspend fun seedDemoData(userGoal: String): Unit = mutex.withLock {
