@@ -28,6 +28,12 @@ class BlockActivity : ComponentActivity() {
 
         val appContainer = (application as GatekeeperApp).container
 
+        // targetSdk 36 dispatches Back through OnBackPressedDispatcher; overriding the
+        // deprecated onBackPressed() never runs, which let Back silently bypass the blocker.
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = returnToHomeScreen()
+        })
+
         setContent {
             GatekeeperTheme {
                 val viewModel: NegotiationViewModel = viewModel(
@@ -69,10 +75,6 @@ class BlockActivity : ComponentActivity() {
         }
         startActivity(homeIntent)
         finish()
-    }
-
-    override fun onBackPressed() {
-        returnToHomeScreen()
     }
 
     companion object {

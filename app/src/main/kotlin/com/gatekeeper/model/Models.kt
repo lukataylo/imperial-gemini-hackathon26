@@ -44,7 +44,7 @@ data class Grant(
     val promise: String,
     val wasClamped: Boolean = false,
 ) {
-    val expiresAt: Long get() = startedAt + (minutes * 60 * 1000L)
+    val expiresAt: Long get() = startedAt + (minutes.toLong() * 60_000L)
     fun isExpired(now: Long): Boolean = now >= expiresAt
 }
 

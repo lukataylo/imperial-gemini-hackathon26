@@ -17,8 +17,11 @@ class DefaultModelProvider(
 
     companion object {
         const val MODEL_FILENAME = "gemma-4-E2B-it.litertlm"
-        const val HF_MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E2B-it/resolve/main/gemma-4-E2B-it.litertlm"
-        const val MODEL_SIZE_BYTES = 1_250_000_000L // ~1.25 GB
+        // Verified Aug 2026: this repo exists and is NOT gated (no HF token needed).
+        // The old URL (litert-community/gemma-4-E2B-it) 404/401s.
+        const val HF_MODEL_URL = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+        const val MODEL_SIZE_BYTES = 2_590_000_000L // ~2.59 GB. NB: the -gpu variant does
+        // NOT load — it lacks TF_LITE_PREFILL_DECODE. Use this standard build.
     }
 
     override fun getTargetModelFile(): File {
@@ -46,10 +49,16 @@ class DefaultModelProvider(
         }
 
         // 3. Check common adb push paths for fast development
-        val adbPaths = listOf(
-            "/data/local/tmp/$MODEL_FILENAME",
+        // The app-specific external dir is the ONLY sideload target that works on modern
+        // Android: adb (shell) can write it, and we can read it with no storage permission.
+        // /data/local/tmp is SELinux-denied to us and /sdcard/Download needs a permission we
+        // deliberately don't hold — both of those probes silently always failed.
+        val external = context.getExternalFilesDir(null)
+        val adbPaths = listOfNotNull(
+            external?.let { File(it, "models/$MODEL_FILENAME").absolutePath },
+            external?.let { File(it, MODEL_FILENAME).absolutePath },
             "/sdcard/Download/$MODEL_FILENAME",
-            "/data/local/tmp/gemma-2b-it.litertlm"
+            "/data/local/tmp/$MODEL_FILENAME"
         )
         for (path in adbPaths) {
             val file = File(path)

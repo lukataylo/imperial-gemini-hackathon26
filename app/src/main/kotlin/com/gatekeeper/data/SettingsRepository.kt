@@ -22,7 +22,10 @@ data class SettingsData(
     val rules: Rules = Rules(
         maxMinutesPerGrant = 15,
         maxGrantsPerDay = 4,
-        minGapMinutes = 20,
+        // 0 by default: after a grant expires the user may argue again immediately,
+        // but the ledger means they argue from a worse position. A non-zero gap turns
+        // the re-open into a flat denial with no agent, which is not the product.
+        minGapMinutes = 0,
         dailyBudgetMinutes = mapOf("com.instagram.android" to 60),
         blackoutWindows = listOf(
             TimeWindow(startMinuteOfDay = 23 * 60 + 30, endMinuteOfDay = 7 * 60)

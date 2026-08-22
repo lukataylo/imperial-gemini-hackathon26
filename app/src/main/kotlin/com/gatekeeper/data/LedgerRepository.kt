@@ -187,8 +187,13 @@ class JsonLedgerRepository(
         honoured: Boolean?
     ): Unit = mutex.withLock {
         val isHonoured = honoured ?: (overranByMinutes == null || overranByMinutes <= 0)
+        // Only the most recent open record for this app — this used to stamp every
+        // orphaned record with the same outcome and inflate the honoured/total counts.
+        val targetId = _ledgerData.value.grantRecords
+            .filter { it.appId == appId && it.endedAt == null }
+            .maxByOrNull { it.requestedAt }?.id
         val updatedRecords = _ledgerData.value.grantRecords.map { record ->
-            if (record.appId == appId && record.endedAt == null) {
+            if (record.id == targetId) {
                 record.copy(
                     endedAt = endedAt,
                     overranBy = overranByMinutes,
@@ -239,7 +244,7 @@ class JsonLedgerRepository(
                 grantedMinutes = 10,
                 mode = AccessMode.GRAYSCALE,
                 promise = "just replying to Maya",
-                endedAt = now - 15 * 60 * 1000L,
+                endedAt = now - 40 * 60 * 1000L,
                 overranBy = 14,
                 honoured = false
             ),
@@ -280,7 +285,11 @@ class JsonLedgerRepository(
             usageSamples = usage,
             activeGrant = null
         )
-        settingsRepository.setUserGoal(userGoal)
+        // Only seed a goal if the user has not written their own — this used to
+        // silently overwrite whatever they typed in onboarding.
+        if (settingsRepository.settingsData.value.userGoal.isBlank()) {
+            settingsRepository.setUserGoal(userGoal)
+        }
         persistLocked()
     }
 

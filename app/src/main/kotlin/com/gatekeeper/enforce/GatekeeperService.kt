@@ -44,7 +44,15 @@ class GatekeeperService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForegroundWithNotification()
+        try {
+            startForegroundWithNotification()
+        } catch (e: Exception) {
+            // START_STICKY restarts us in the background, where startForeground() is
+            // disallowed and throws. Uncaught, that is a crash loop.
+            android.util.Log.e("GatekeeperService", "startForeground rejected", e)
+            stopSelf()
+            return
+        }
 
         val container = (application as? GatekeeperApp)?.container
         if (container != null) {

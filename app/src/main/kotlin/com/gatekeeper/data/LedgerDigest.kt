@@ -68,7 +68,8 @@ object LedgerDigest {
                 } else if (last.overranBy != null && last.overranBy > 0) {
                     sb.append("Overran by ").append(last.overranBy).append(" min. NOT HONOURED.\n")
                 } else if (last.honoured == false) {
-                    sb.append("NOT HONOURED.\n")
+                    sb.append("Stayed the full ").append(last.grantedMinutes)
+                        .append(" min. NOT HONOURED.\n")
                 } else {
                     sb.append("\n")
                 }

@@ -28,7 +28,7 @@ interface GrantManager {
     val activeGrant: StateFlow<Grant?>
     suspend fun onAppForeground(packageName: String)
     suspend fun startGrant(grant: Grant, plea: String, proposedMinutes: Int)
-    suspend fun endGrant(appId: String, overranByMinutes: Int? = null)
+    suspend fun endGrant(appId: String, overranByMinutes: Int? = null, honoured: Boolean? = null)
     fun isAppWatched(packageName: String): Boolean
 }
 
@@ -47,6 +47,10 @@ class DefaultGrantManager(
 
     private var expiryJob: Job? = null
     private var headsUpJob: Job? = null
+
+    /** Last package seen in the foreground, watched or not. Needed to tell whether a
+     *  grant was honoured (user left before expiry) or overran (still inside at T-0). */
+    @Volatile private var currentForegroundApp: String? = null
 
     companion object {
         const val CHANNEL_ID_COUNTDOWN = "gatekeeper_countdown"
@@ -92,6 +96,19 @@ class DefaultGrantManager(
     }
 
     override suspend fun onAppForeground(packageName: String) {
+        val previous = currentForegroundApp
+        currentForegroundApp = packageName
+
+        // User left the granted app before time ran out — that is a kept promise.
+        val active = _activeGrant.value
+        if (active != null && previous == active.appId && packageName != active.appId) {
+            val now = System.currentTimeMillis()
+            if (now < active.expiresAt) {
+                endGrant(active.appId, overranByMinutes = 0, honoured = true)
+                return
+            }
+        }
+
         if (!settingsRepository.isInterceptionEnabled()) return
         if (!isAppWatched(packageName)) return
 
@@ -128,26 +145,41 @@ class DefaultGrantManager(
         scheduleGrantTimers(grant)
     }
 
-    override suspend fun endGrant(appId: String, overranByMinutes: Int?) {
+    override suspend fun endGrant(appId: String, overranByMinutes: Int?, honoured: Boolean?) {
         val now = System.currentTimeMillis()
+        val ending = _activeGrant.value
         _activeGrant.value = null
         grayscaleOverlayManager.disableGrayscale()
         cancelNotifications()
         expiryJob?.cancel()
         headsUpJob?.cancel()
 
-        ledgerRepository.resolveGrantOutcome(appId, now, overranByMinutes)
+        // Budgets only deplete if we write usage back. Without this every limit is infinite.
+        if (ending != null && ending.appId == appId) {
+            val consumedMillis = (now - ending.startedAt).coerceAtLeast(0L)
+            val consumedMinutes = Math.round(consumedMillis / 60_000.0).toInt()
+            if (consumedMinutes > 0) {
+                val today = java.time.LocalDate.now()
+                    .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                ledgerRepository.addUsageMinutes(appId, today, consumedMinutes)
+            }
+        }
+
+        ledgerRepository.resolveGrantOutcome(appId, now, overranByMinutes, honoured)
     }
 
     private fun scheduleGrantTimers(grant: Grant) {
         expiryJob?.cancel()
         headsUpJob?.cancel()
 
-        val grantDurationMillis = grant.minutes * 60 * 1000L
-        val headsUpDelayMillis = (grant.minutes - 2).coerceAtLeast(1) * 60 * 1000L
+        // Drive from the grant's own expiry, not from now. The offer may have sat on screen
+        // before the user accepted it; timing from accept-time hands out free extra minutes.
+        val now = System.currentTimeMillis()
+        val grantDurationMillis = (grant.expiresAt - now).coerceAtLeast(0L)
+        val headsUpDelayMillis = (grantDurationMillis - 2 * 60_000L).coerceAtLeast(0L)
 
         // Heads up at T-2 minutes (Screen 3 in 03-UI-SPEC.md)
-        if (grant.minutes > 2) {
+        if (grantDurationMillis > 2 * 60_000L) {
             headsUpJob = scope.launch {
                 delay(headsUpDelayMillis)
                 if (isActive && _activeGrant.value?.appId == grant.appId) {
@@ -160,9 +192,15 @@ class DefaultGrantManager(
         expiryJob = scope.launch {
             delay(grantDurationMillis)
             if (isActive) {
-                endGrant(grant.appId, overranByMinutes = 0)
-                // Re-block immediately if user is still in the app
-                onAppForeground(grant.appId)
+                // Still inside the app when time ran out: they used every minute they asked
+                // for. That is the broken promise the agent quotes back on the next attempt.
+                val stillInside = currentForegroundApp == grant.appId
+                endGrant(
+                    grant.appId,
+                    overranByMinutes = if (stillInside) 0 else null,
+                    honoured = !stillInside
+                )
+                if (stillInside) onAppForeground(grant.appId)
             }
         }
     }

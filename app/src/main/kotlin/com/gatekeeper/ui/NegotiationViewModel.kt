@@ -38,6 +38,8 @@ data class NegotiationUiState(
     val denialReason: DenialReason? = null,
     val retryAfterMinutes: Int? = null,
     val lastPlea: String = "",
+    val errorMessage: String? = null,
+    val isReady: Boolean = false,
 )
 
 class NegotiationViewModel(
@@ -76,7 +78,17 @@ class NegotiationViewModel(
             )
 
             if (denialReason == null) {
-                negotiationSession = inferenceManager.createNegotiationSession(appId, appName, now)
+                try {
+                    // Close any previous session first — LaunchedEffect re-runs on rotation and
+                    // silently leaked a native Conversation (and its KV cache) each time.
+                    negotiationSession?.close()
+                    negotiationSession = inferenceManager.createNegotiationSession(appId, appName, now)
+                    _uiState.value = _uiState.value.copy(isReady = true)
+                } catch (e: Exception) {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = e.message ?: "Could not start the on-device model"
+                    )
+                }
             }
         }
     }
@@ -98,7 +110,16 @@ class NegotiationViewModel(
 
         streamingJob?.cancel()
         streamingJob = viewModelScope.launch {
-            val session = negotiationSession ?: return@launch
+            val session = negotiationSession
+            if (session == null) {
+                // Model still warming. Never leave isStreaming stuck true — that permanently
+                // disables Send with no error and no way back except Never mind.
+                _uiState.value = _uiState.value.copy(
+                    isStreaming = false,
+                    errorMessage = "Still waking the model up — try again in a second."
+                )
+                return@launch
+            }
             var streamingAgentMessage: ChatMessage? = null
 
             session.sendPlea(trimmed).collect { event ->
@@ -106,7 +127,8 @@ class NegotiationViewModel(
                     is NegotiationEvent.Token -> {
                         val currentText = streamingAgentMessage?.text ?: ""
                         val updatedText = currentText + event.text
-                        streamingAgentMessage = ChatMessage(isUser = false, text = updatedText)
+                        streamingAgentMessage = (streamingAgentMessage
+                            ?: ChatMessage(isUser = false, text = "")).copy(text = updatedText)
 
                         val updatedList = if (_uiState.value.messages.lastOrNull()?.isUser == false) {
                             _uiState.value.messages.dropLast(1) + streamingAgentMessage!!
@@ -127,6 +149,13 @@ class NegotiationViewModel(
                         _uiState.value = _uiState.value.copy(
                             currentProposal = event.proposal,
                             clampedGrant = grant
+                        )
+                    }
+
+                    is NegotiationEvent.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isStreaming = false,
+                            errorMessage = event.message
                         )
                     }
 
