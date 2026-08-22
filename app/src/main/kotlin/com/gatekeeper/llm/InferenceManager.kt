@@ -141,6 +141,44 @@ class InferenceManager(
         SimulatedNegotiationSession(appName, snapshot, rules)
     }
 
+    /**
+     * Generates a one-shot throwaway response from Gemma without tools (e.g. for Weekly Wrapped coach's note).
+     * Returns null if engine is not ready or if inference times out.
+     */
+    suspend fun generateOneShot(prompt: String, timeoutMs: Long = 6000L): String? = withContext(dispatcher) {
+        if (_engineState.value !is EngineState.Ready) return@withContext null
+        val currentEngine = engine ?: return@withContext null
+
+        var conversation: Conversation? = null
+        try {
+            kotlinx.coroutines.withTimeoutOrNull(timeoutMs) {
+                val config = ConversationConfig(
+                    systemInstruction = Contents.of("You are Gatekeeper, a thoughtful and concise on-device AI coach."),
+                    samplerConfig = SamplerConfig(topK = 40, topP = 0.9, temperature = 0.7),
+                    tools = emptyList(),
+                    automaticToolCalling = false
+                )
+                conversation = currentEngine.createConversation(config)
+                val fullText = StringBuilder()
+                conversation?.sendMessageAsync(Contents.of(prompt))?.collect { msg ->
+                    val text = msg.contents.toString()
+                    if (text.isNotEmpty()) {
+                        fullText.append(text)
+                    }
+                }
+                val result = fullText.toString().trim()
+                result.ifBlank { null }
+            }
+        } catch (e: Exception) {
+            Log.w(tag, "generateOneShot failed: ${e.message}")
+            null
+        } finally {
+            try {
+                conversation?.close()
+            } catch (_: Exception) {}
+        }
+    }
+
     private class RealNegotiationSession(
         private val conversation: Conversation
     ) : NegotiationSession {
