@@ -234,6 +234,16 @@ class JsonLedgerRepository(
         val now = System.currentTimeMillis()
         val todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
 
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        fun timeAt(daysAgo: Long, hour: Int, minute: Int): Long {
+            return today.minusDays(daysAgo)
+                .atTime(hour, minute)
+                .atZone(zone)
+                .toInstant()
+                .toEpochMilli()
+        }
+
         val sampleGrants = listOf(
             GrantHistoryItem(
                 id = 1L,
@@ -273,11 +283,173 @@ class JsonLedgerRepository(
                 endedAt = now - 24 * 3600 * 1000L + 10 * 60 * 1000L,
                 overranBy = 0,
                 honoured = true
+            ),
+            GrantHistoryItem(
+                id = 4L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(1, 22, 10),
+                plea = "quick peek at feed before sleep",
+                proposedMinutes = 15,
+                grantedMinutes = 10,
+                mode = AccessMode.FULL,
+                promise = "quick check",
+                endedAt = timeAt(1, 22, 32),
+                overranBy = 12,
+                honoured = false
+            ),
+            GrantHistoryItem(
+                id = 5L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(1, 14, 30),
+                plea = "need to reply to Liam about project slides",
+                proposedMinutes = 15,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "reply to Liam",
+                endedAt = timeAt(1, 14, 40),
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 6L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(2, 22, 25),
+                plea = "just checking story updates real quick",
+                proposedMinutes = 10,
+                grantedMinutes = 5,
+                mode = AccessMode.FULL,
+                promise = "5 min story check",
+                endedAt = timeAt(2, 22, 45),
+                overranBy = 15,
+                honoured = false
+            ),
+            GrantHistoryItem(
+                id = 7L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(2, 12, 15),
+                plea = "check the sourdough recipe for dinner",
+                proposedMinutes = 10,
+                grantedMinutes = 10,
+                mode = AccessMode.FULL,
+                promise = "save recipe",
+                endedAt = timeAt(2, 12, 25),
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 8L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(3, 22, 40),
+                plea = "late night scroll before bed",
+                proposedMinutes = 20,
+                grantedMinutes = 10,
+                mode = AccessMode.FULL,
+                promise = "catch up",
+                endedAt = timeAt(3, 23, 0),
+                overranBy = 10,
+                honoured = false
+            ),
+            GrantHistoryItem(
+                id = 9L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(3, 16, 0),
+                plea = "message from Sarah about weekend trip",
+                proposedMinutes = 15,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "reply to Sarah",
+                endedAt = timeAt(3, 16, 10),
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 10L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(4, 22, 5),
+                plea = "urgent message reply to team",
+                proposedMinutes = 15,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "urgent team message",
+                endedAt = timeAt(4, 22, 15),
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 11L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(4, 18, 30),
+                plea = "lookup restaurant directions for tonight",
+                proposedMinutes = 10,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "find map and address",
+                endedAt = timeAt(4, 18, 40),
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 12L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(5, 22, 50),
+                plea = "just bored for a second",
+                proposedMinutes = 10,
+                grantedMinutes = 5,
+                mode = AccessMode.FULL,
+                promise = "quick glance",
+                endedAt = timeAt(5, 23, 3),
+                overranBy = 8,
+                honoured = false
+            ),
+            GrantHistoryItem(
+                id = 13L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(5, 11, 20),
+                plea = "reply to Mom about Sunday lunch",
+                proposedMinutes = 10,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "confirm lunch",
+                endedAt = timeAt(5, 11, 30),
+                overranBy = 0,
+                honoured = true
+            ),
+            GrantHistoryItem(
+                id = 14L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(6, 22, 15),
+                plea = "one sec",
+                proposedMinutes = 10,
+                grantedMinutes = 5,
+                mode = AccessMode.FULL,
+                promise = "look at one reel",
+                endedAt = timeAt(6, 22, 34),
+                overranBy = 14,
+                honoured = false
+            ),
+            GrantHistoryItem(
+                id = 15L,
+                appId = "com.instagram.android",
+                requestedAt = timeAt(6, 15, 45),
+                plea = "need to book tickets for the train",
+                proposedMinutes = 15,
+                grantedMinutes = 10,
+                mode = AccessMode.GRAYSCALE,
+                promise = "buy tickets",
+                endedAt = timeAt(6, 15, 55),
+                overranBy = 0,
+                honoured = true
             )
         )
 
         val usage = listOf(
-            UsageSample(appId = "com.instagram.android", day = todayStr, minutes = 47)
+            UsageSample(appId = "com.instagram.android", day = todayStr, minutes = 47),
+            UsageSample(appId = "com.instagram.android", day = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 52),
+            UsageSample(appId = "com.instagram.android", day = today.minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 45),
+            UsageSample(appId = "com.instagram.android", day = today.minusDays(3).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 58),
+            UsageSample(appId = "com.instagram.android", day = today.minusDays(4).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 38),
+            UsageSample(appId = "com.instagram.android", day = today.minusDays(5).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 49),
+            UsageSample(appId = "com.instagram.android", day = today.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 41)
         )
 
         _ledgerData.value = LedgerData(
