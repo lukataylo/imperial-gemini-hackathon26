@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
                 var showSettings by remember { mutableStateOf(false) }
                 var insight by remember { mutableStateOf<String?>(null) }
                 var insightLoading by remember { mutableStateOf(false) }
+                var showWrapped by remember { mutableStateOf(false) }
 
                 if (!settings.onboardingCompleted) {
                     OnboardingScreen(
@@ -50,6 +51,20 @@ class MainActivity : ComponentActivity() {
                     SettingsScreen(
                         appContainer = appContainer,
                         onBack = { showSettings = false }
+                    )
+                } else if (showWrapped) {
+                    val weeklyInsights = remember(ledger, settings.rules, settings.userGoal) {
+                        com.crusty.insights.InsightsEngine.computeWeekly(
+                            data = ledger,
+                            rules = settings.rules,
+                            userGoal = settings.userGoal,
+                            now = System.currentTimeMillis()
+                        )
+                    }
+                    WrappedScreen(
+                        insights = weeklyInsights,
+                        inferenceManager = appContainer.inferenceManager,
+                        onClose = { showWrapped = false }
                     )
                 } else {
                     val todayUsageMap = remember(ledger.usageSamples) {
@@ -69,6 +84,7 @@ class MainActivity : ComponentActivity() {
                         openPromise = openPromise,
                         recentGrants = recentGrants,
                         onOpenSettings = { showSettings = true },
+                        onOpenWrapped = { showWrapped = true },
                         onSeedDemoData = {
                             scope.launch {
                                 appContainer.ledgerRepository.seedDemoData()

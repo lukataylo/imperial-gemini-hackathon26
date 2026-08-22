@@ -4,7 +4,7 @@ An Android app blocker you negotiate with — powered by on-device Gemma 4.
 
 Crusty stops you from opening distracting apps, but instead of a hard block, it starts a conversation. State your reason for opening the app. Crusty asks clarifying questions, remembers whether you kept your previous promises, and offers the minimal pass required — like 10 minutes in grayscale to send a single reply.
 
-Built for the **UK AI Agents Lab Hackathon at Imperial College London** (Track 2 — Best Use of Gemma).
+Built for the **UK AI Agents Lab Hackathon at Imperial College London** (Track 3 — Hybrid Gemini + Gemma).
 
 ---
 

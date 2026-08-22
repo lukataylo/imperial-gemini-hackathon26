@@ -4,7 +4,7 @@ Everything the brief requires, plus the assets. Owned by whoever is *not* debugg
 
 ## Track
 
-**Track 2 — Best Use of Gemma.** Privacy-preserving, offline-capable, edge-optimised, Gemma 4 open weights on local hardware via LiteRT. That is a description of this product with nothing bent to fit.
+**Track 3 — Hybrid Gemini + Gemma.** Privacy-preserving on-device Gemma 4 negotiation combined with opt-in Gemini 3.7 Flash weekly reflections.
 
 **Track 3 (Hybrid Gemini + Gemma) is a live option**, and its prompt inspirations name "daily wellness companions — micro-agents that interpret daily habits and turn them into simple, actionable steps," which is also us. The honest split, if you take it:
 
@@ -13,7 +13,7 @@ Everything the brief requires, plus the assets. Owned by whoever is *not* debugg
 
 That split is defensible in Q&A because each model is where it belongs, rather than one being decoration. But it costs ~45 minutes and it dilutes "nothing leaves your phone," which is your cleanest line.
 
-**Decide at GATE 2 (14:30):** loop closed and stable with time in hand → add the reflection and enter Track 3. Anything less → Track 2, clean.
+**Selected Track:** Track 3 — Hybrid Gemini + Gemma.
 
 ## Required deliverables
 
