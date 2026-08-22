@@ -45,6 +45,12 @@ import com.crusty.insights.NegotiationArchetype
 import com.crusty.insights.WeeklyInsights
 import com.crusty.llm.InferenceManager
 import kotlinx.coroutines.launch
+import com.crusty.R
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.Image
 
 @Composable
 fun WrappedScreen(
@@ -66,7 +72,9 @@ fun WrappedScreen(
                     "This week: ${insights.negotiationsCount} negotiations, " +
                     "${(insights.overallHonourRate * 100).toInt()}% promises kept, " +
                     "signature move: '${insights.signatureTechnique.archetype.title}'. " +
-                    "Write 2 warm, wry, concise sentences of feedback for their week. No bullet points, no emojis."
+                    "You are Crusty, a dry, warm, spiky timer creature who has watched all of this happen. " +
+                    "Write 2 sentences about their week, second person, specific, no advice-speak, " +
+                    "no names, no bullet points, no emojis. Sound like a friend who noticed something."
             val generated = inferenceManager.generateOneShot(prompt, timeoutMs = 4000L)
             coachNote = generated
             isLoadingCoachNote = false
@@ -213,7 +221,7 @@ private fun HeadlineNumbersCard(insights: WeeklyInsights) {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Haggling Gap",
+                            text = "Time you talked yourself out of",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -224,7 +232,7 @@ private fun HeadlineNumbersCard(insights: WeeklyInsights) {
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "You negotiated away ${maxOf(0, insights.hagglingGapMinutes)} minutes of screen time.",
+                            text = "You asked for more and settled for less, ${maxOf(0, insights.hagglingGapMinutes)} minutes of it.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -237,7 +245,7 @@ private fun HeadlineNumbersCard(insights: WeeklyInsights) {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Promise Honour Rate",
+                            text = "Times you kept your word",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -250,7 +258,7 @@ private fun HeadlineNumbersCard(insights: WeeklyInsights) {
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${insights.honouredCount} of ${insights.totalDecidedCount} promises kept as agreed.",
+                            text = "${insights.honouredCount} out of ${insights.totalDecidedCount}. Not bad for a running argument with a kitchen timer.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -266,19 +274,19 @@ private fun SignatureTechniqueCard(insights: WeeklyInsights) {
     val technique = insights.signatureTechnique
     val copy = when (technique.archetype) {
         NegotiationArchetype.NAMED_HUMAN ->
-            "Your go-to move: naming a real human. It works — you honoured ${technique.honouredCount} of ${technique.totalDecided} of those."
+            "Your best excuse is someone waiting on you. It holds up too, you kept ${technique.honouredCount} of ${technique.totalDecided} of them."
         NegotiationArchetype.ERRAND ->
-            "Your go-to move: specific errands and recipes. You honoured ${technique.honouredCount} of ${technique.totalDecided} of those tasks."
+            "You do best when you go in for one specific thing. ${technique.honouredCount} of ${technique.totalDecided} of those ended when you said they would."
         NegotiationArchetype.DEADLINE ->
-            "Your go-to move: urgent time pressure. You negotiated ${technique.count} times under a deadline."
+            "Everything is urgent when you want in. You played the deadline card ${technique.count} times."
         NegotiationArchetype.JUST_CHECKING ->
-            "Your go-to move: 'just checking for a second'. You used this ${technique.count} times this week."
+            "'Just checking for a second', ${technique.count} times this week. You know how that one ends."
         NegotiationArchetype.BARE_MINIMUM ->
-            "Your go-to move: the bare minimum plea. Short, cryptic, and direct."
+            "You barely explain yourself. Short, blunt, and hoping for the best."
         NegotiationArchetype.LAWYER ->
-            "Your go-to move: trying to negotiate past the instructions. Crusty's policy engine stood firm."
+            "You tried to argue with the rules instead of giving a reason. It never once worked."
         NegotiationArchetype.GENERAL ->
-            "Your go-to move: straightforward negotiation."
+            "You just ask. No games, no angle."
     }
 
     Card(
@@ -342,8 +350,30 @@ private fun DangerHourCard(insights: WeeklyInsights) {
     Card(
         modifier = Modifier.fillMaxSize(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E1420))
     ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Full-bleed night desk scene; the art leaves the top third empty sky,
+            // which is exactly where the hour sits.
+            Image(
+                painter = painterResource(id = R.drawable.danger_hour_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Scrim so the readouts stay legible over the lamp and the moon.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color(0xCC0A0F18),
+                            0.35f to Color(0x660A0F18),
+                            0.62f to Color(0x330A0F18),
+                            1f to Color(0xF00A0F18)
+                        )
+                    )
+            )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -352,7 +382,7 @@ private fun DangerHourCard(insights: WeeklyInsights) {
         ) {
             Column {
                 Text(
-                    text = "FRICTION PROFILE",
+                    text = "WHEN IT'S HARDEST",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.Bold
@@ -361,13 +391,13 @@ private fun DangerHourCard(insights: WeeklyInsights) {
                 Text(
                     text = hourText,
                     style = MaterialTheme.typography.displayLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Your danger hour",
+                    text = "The hour that gets you",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xCCFFFFFF)
                 )
             }
 
@@ -387,7 +417,7 @@ private fun DangerHourCard(insights: WeeklyInsights) {
                             text = if (dangerHour != null) {
                                 "${dangerHour.count} negotiations clustered at $hourText with a ${(dangerHour.honourRate * 100).toInt()}% honour rate."
                             } else {
-                                "No clustered danger hour detected this week."
+                                "No single hour got you this week. That's rarer than you'd think."
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -414,13 +444,14 @@ private fun DangerHourCard(insights: WeeklyInsights) {
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Fewest negotiations and lowest friction on $dayName.",
+                            text = "$dayName was your easiest day. You barely argued at all.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
+        }
         }
     }
 }
@@ -514,9 +545,9 @@ private fun OverrunProfileCard(insights: WeeklyInsights) {
 
                     Text(
                         text = if (overrun.grayscaleHonourRate > overrun.fullHonourRate) {
-                            "Grayscale reduces visual craving — you kept significantly more promises under grayscale."
+                            "Colour is doing more work than you think. You kept far more promises when the screen went grey."
                         } else {
-                            "Keep your grants focused to avoid overrun drift."
+                            "Shorter asks stick. The long ones quietly become something else."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -549,7 +580,7 @@ private fun RecommendationsCard(insights: WeeklyInsights) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Recommended Rules",
+                    text = "What Crusty would change",
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
@@ -564,13 +595,13 @@ private fun RecommendationsCard(insights: WeeklyInsights) {
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "No changes needed",
+                                text = "Leave it as it is",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Your limits are well-balanced for your current patterns.",
+                                text = "Your limits fit how you actually behave. Rare. Don't touch them.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -611,9 +642,9 @@ private fun CoachNoteCard(
     isLoading: Boolean
 ) {
     val fallbackNote = if (insights.overallHonourRate >= 0.7) {
-        "You honoured most of your promises this week, especially when asking for concrete errands. Keep holding the line during late evenings."
+        "You kept most of what you promised, and you were best when you knew exactly what you were going in for. The evenings are still where it slips."
     } else {
-        "Late evenings remain high-friction, but negotiating in grayscale helped keep overruns manageable. One intentional pause changes the rest of the night."
+        "Late evenings are still the hard part, but grey screens kept the overruns small. One pause early seems to decide the whole night."
     }
 
     Card(

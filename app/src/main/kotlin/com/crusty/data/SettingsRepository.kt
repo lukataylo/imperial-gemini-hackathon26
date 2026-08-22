@@ -37,7 +37,7 @@ data class SettingsData(
         // but the ledger means they argue from a worse position. A non-zero gap turns
         // the re-open into a flat denial with no agent, which is not the product.
         minGapMinutes = 0,
-        dailyBudgetMinutes = mapOf("com.instagram.android" to 60),
+        dailyBudgetMinutes = mapOf("com.reddit.frontpage" to 60),
         blackoutWindows = listOf(
             TimeWindow(startMinuteOfDay = 23 * 60 + 30, endMinuteOfDay = 7 * 60)
         )

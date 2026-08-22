@@ -37,6 +37,9 @@ class UsageInsights(
     companion object {
         private const val TAG = "UsageInsights"
         const val DEFAULT_MODEL = "gemini-3.7-flash"
+        /** Tried in order. The newest model is the most contended on a hackathon day,
+         *  and a 503 there should not read to the user as "this feature is broken". */
+        val FALLBACK_MODELS = listOf("gemini-3.7-flash", "gemini-3.6-flash", "gemini-flash-latest")
         private const val ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models"
     }
 
@@ -110,7 +113,30 @@ class UsageInsights(
             ${buildAnonymisedSummary(grants, usage, userGoal)}
         """.trimIndent()
 
-        try {
+        val models = (listOf(model) + FALLBACK_MODELS).distinct()
+        var lastError = "Network error"
+
+        for (candidateModel in models) {
+            // 503/429 are common and transient under load — back off before giving up.
+            repeat(3) { attempt ->
+                if (attempt > 0) kotlinx.coroutines.delay(1500L * attempt)
+                when (val r = callOnce(candidateModel, prompt)) {
+                    is Result.Success -> return@withContext r
+                    is Result.Failure -> {
+                        lastError = r.message
+                        if (!r.message.contains("503") && !r.message.contains("429")) {
+                            return@repeat  // not a load problem: try the next model
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+        Result.Failure(lastError)
+    }
+
+    private fun callOnce(model: String, prompt: String): Result {
+        return try {
             val body = JSONObject().put(
                 "contents",
                 JSONArray().put(
@@ -123,7 +149,7 @@ class UsageInsights(
                 requestMethod = "POST"
                 doOutput = true
                 connectTimeout = 15_000
-                readTimeout = 45_000
+                readTimeout = 60_000
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("x-goog-api-key", apiKey)
             }
@@ -135,17 +161,29 @@ class UsageInsights(
             conn.disconnect()
 
             if (code !in 200..299) {
-                Log.w(TAG, "Gemini HTTP $code: ${text.take(400)}")
-                return@withContext Result.Failure("Gemini returned HTTP $code.")
+                Log.w(TAG, "Gemini $model HTTP $code: ${text.take(300)}")
+                return Result.Failure(
+                    when (code) {
+                        503, 429 -> "$code busy"
+                        401, 403 -> "Gemini rejected the API key."
+                        else -> "Gemini returned HTTP $code."
+                    }
+                )
             }
 
-            val out = JSONObject(text)
+            // 3.x returns thought parts alongside text, so collect every text part
+            // rather than assuming parts[0] holds the answer.
+            val parts = JSONObject(text)
                 .optJSONArray("candidates")?.optJSONObject(0)
-                ?.optJSONObject("content")?.optJSONArray("parts")?.optJSONObject(0)
-                ?.optString("text").orEmpty()
+                ?.optJSONObject("content")?.optJSONArray("parts")
+            val out = buildString {
+                for (i in 0 until (parts?.length() ?: 0)) {
+                    parts?.optJSONObject(i)?.optString("text")?.let { append(it) }
+                }
+            }.trim()
 
             if (out.isBlank()) Result.Failure("Gemini returned an empty response.")
-            else Result.Success(out.trim())
+            else Result.Success(out)
         } catch (e: Exception) {
             Log.e(TAG, "Gemini call failed", e)
             Result.Failure(e.message ?: "Network error")

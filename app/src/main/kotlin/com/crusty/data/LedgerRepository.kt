@@ -247,22 +247,22 @@ class JsonLedgerRepository(
         val sampleGrants = listOf(
             GrantHistoryItem(
                 id = 1L,
-                appId = "com.instagram.android",
+                appId = "com.reddit.frontpage",
                 requestedAt = now - 25 * 60 * 1000L,
-                plea = "need to reply to Maya about tomorrow's venue",
+                plea = "need to reply to a friend about tomorrow's plans",
                 proposedMinutes = 20,
                 grantedMinutes = 10,
                 mode = AccessMode.GRAYSCALE,
-                promise = "just replying to Maya",
+                promise = "just sending one reply",
                 endedAt = now - 40 * 60 * 1000L,
                 overranBy = 14,
                 honoured = false
             ),
             GrantHistoryItem(
                 id = 2L,
-                appId = "com.instagram.android",
+                appId = "com.reddit.frontpage",
                 requestedAt = now - 3 * 3600 * 1000L,
-                plea = "check recipe for dinner",
+                plea = "look up a recipe for dinner",
                 proposedMinutes = 5,
                 grantedMinutes = 5,
                 mode = AccessMode.FULL,
@@ -273,9 +273,9 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 3L,
-                appId = "com.instagram.android",
+                appId = "com.google.android.youtube",
                 requestedAt = now - 24 * 3600 * 1000L,
-                plea = "posting event details",
+                plea = "posting the event details",
                 proposedMinutes = 15,
                 grantedMinutes = 10,
                 mode = AccessMode.GRAYSCALE,
@@ -286,9 +286,9 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 4L,
-                appId = "com.instagram.android",
+                appId = "com.twitter.android",
                 requestedAt = timeAt(1, 22, 10),
-                plea = "quick peek at feed before sleep",
+                plea = "quick peek at the feed before sleep",
                 proposedMinutes = 15,
                 grantedMinutes = 10,
                 mode = AccessMode.FULL,
@@ -299,7 +299,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 5L,
-                appId = "com.instagram.android",
+                appId = "com.reddit.frontpage",
                 requestedAt = timeAt(1, 14, 30),
                 plea = "need to reply to Liam about project slides",
                 proposedMinutes = 15,
@@ -312,7 +312,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 6L,
-                appId = "com.instagram.android",
+                appId = "com.google.android.youtube",
                 requestedAt = timeAt(2, 22, 25),
                 plea = "just checking story updates real quick",
                 proposedMinutes = 10,
@@ -325,7 +325,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 7L,
-                appId = "com.instagram.android",
+                appId = "com.twitter.android",
                 requestedAt = timeAt(2, 12, 15),
                 plea = "check the sourdough recipe for dinner",
                 proposedMinutes = 10,
@@ -338,7 +338,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 8L,
-                appId = "com.instagram.android",
+                appId = "com.reddit.frontpage",
                 requestedAt = timeAt(3, 22, 40),
                 plea = "late night scroll before bed",
                 proposedMinutes = 20,
@@ -351,20 +351,20 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 9L,
-                appId = "com.instagram.android",
+                appId = "com.reddit.frontpage",
                 requestedAt = timeAt(3, 16, 0),
-                plea = "message from Sarah about weekend trip",
+                plea = "someone messaged about the weekend trip",
                 proposedMinutes = 15,
                 grantedMinutes = 10,
                 mode = AccessMode.GRAYSCALE,
-                promise = "reply to Sarah",
+                promise = "reply about the trip",
                 endedAt = timeAt(3, 16, 10),
                 overranBy = 0,
                 honoured = true
             ),
             GrantHistoryItem(
                 id = 10L,
-                appId = "com.instagram.android",
+                appId = "com.google.android.youtube",
                 requestedAt = timeAt(4, 22, 5),
                 plea = "urgent message reply to team",
                 proposedMinutes = 15,
@@ -377,7 +377,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 11L,
-                appId = "com.instagram.android",
+                appId = "com.twitter.android",
                 requestedAt = timeAt(4, 18, 30),
                 plea = "lookup restaurant directions for tonight",
                 proposedMinutes = 10,
@@ -390,7 +390,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 12L,
-                appId = "com.instagram.android",
+                appId = "com.reddit.frontpage",
                 requestedAt = timeAt(5, 22, 50),
                 plea = "just bored for a second",
                 proposedMinutes = 10,
@@ -403,7 +403,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 13L,
-                appId = "com.instagram.android",
+                appId = "com.google.android.youtube",
                 requestedAt = timeAt(5, 11, 20),
                 plea = "reply to Mom about Sunday lunch",
                 proposedMinutes = 10,
@@ -416,7 +416,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 14L,
-                appId = "com.instagram.android",
+                appId = "com.twitter.android",
                 requestedAt = timeAt(6, 22, 15),
                 plea = "one sec",
                 proposedMinutes = 10,
@@ -429,7 +429,7 @@ class JsonLedgerRepository(
             ),
             GrantHistoryItem(
                 id = 15L,
-                appId = "com.instagram.android",
+                appId = "com.reddit.frontpage",
                 requestedAt = timeAt(6, 15, 45),
                 plea = "need to book tickets for the train",
                 proposedMinutes = 15,
@@ -443,13 +443,13 @@ class JsonLedgerRepository(
         )
 
         val usage = listOf(
-            UsageSample(appId = "com.instagram.android", day = todayStr, minutes = 47),
-            UsageSample(appId = "com.instagram.android", day = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 52),
-            UsageSample(appId = "com.instagram.android", day = today.minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 45),
-            UsageSample(appId = "com.instagram.android", day = today.minusDays(3).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 58),
-            UsageSample(appId = "com.instagram.android", day = today.minusDays(4).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 38),
-            UsageSample(appId = "com.instagram.android", day = today.minusDays(5).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 49),
-            UsageSample(appId = "com.instagram.android", day = today.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 41)
+            UsageSample(appId = "com.reddit.frontpage", day = todayStr, minutes = 47),
+            UsageSample(appId = "com.google.android.youtube", day = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 52),
+            UsageSample(appId = "com.twitter.android", day = today.minusDays(2).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 45),
+            UsageSample(appId = "com.reddit.frontpage", day = today.minusDays(3).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 58),
+            UsageSample(appId = "com.google.android.youtube", day = today.minusDays(4).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 38),
+            UsageSample(appId = "com.twitter.android", day = today.minusDays(5).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 49),
+            UsageSample(appId = "com.reddit.frontpage", day = today.minusDays(6).format(DateTimeFormatter.ISO_LOCAL_DATE), minutes = 41)
         )
 
         _ledgerData.value = LedgerData(
