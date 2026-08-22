@@ -4,7 +4,7 @@ Standing instructions for any agent working in this repo. Read this first, then 
 
 ## What this is
 
-**Gatekeeper** — an Android app that blocks distracting apps, but lets the user *negotiate* their way in by arguing with an on-device Gemma 4 agent. Nothing leaves the phone.
+**Crusty** — an Android app that blocks distracting apps, but lets the user *negotiate* their way in by arguing with an on-device Gemma 4 agent. Nothing leaves the phone.
 
 Built for the **UK AI Agents Lab hackathon at Imperial**, Track 2 (Best Use of Gemma). **Submission deadline is 17:30 GMT the same day.** Every scope decision serves that.
 
@@ -35,7 +35,7 @@ Built for the **UK AI Agents Lab hackathon at Imperial**, Track 2 (Best Use of G
 - Kotlin, Jetpack Compose, no XML layouts. Manual DI via a single `AppContainer` — no Hilt.
 - Coroutines + Flow. No RxJava, no LiveData.
 - Persistence is a JSON file via kotlinx.serialization. No Room.
-- Package root: `com.gatekeeper`. `minSdk 31`, `compileSdk 36`.
+- Package root: `com.crusty`. `minSdk 31`, `compileSdk 36`.
 - Tests: JUnit. The policy engine needs real coverage including adversarial cases. Nothing else does today.
 - Commit per completed checkbox with the lane letter, e.g. `C: clamp invariants + adversarial tests`.
 

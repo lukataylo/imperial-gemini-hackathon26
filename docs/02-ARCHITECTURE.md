@@ -2,13 +2,13 @@
 
 ## Package layout
 
-**One Gradle module.** The one-day deadline does not pay for a module graph. Packages under `com.gatekeeper`:
+**One Gradle module.** The one-day deadline does not pay for a module graph. Packages under `com.crusty`:
 
 ```
 model/      Shared data classes. Committed first, before any lane starts.
 policy/     PURE KOTLIN. Rules, clamping, verdict resolution. No Android imports. Tested.
 llm/        LiteRT-LM engine lifecycle, ToolSet, prompt assembly
-enforce/    AccessibilityService, GatekeeperService (foreground), BlockActivity, grant timer, grayscale
+enforce/    AccessibilityService, CrustyService (foreground), BlockActivity, grant timer, grayscale
 data/       Ledger (JSON file via kotlinx.serialization), rules
 ui/         Compose surfaces + theme
 ```
@@ -126,7 +126,7 @@ Manifest — GPU backend needs these:
 </application>
 ```
 
-`GatekeeperService` (foreground, `specialUse`) owns the engine for the whole app lifetime:
+`CrustyService` (foreground, `specialUse`) owns the engine for the whole app lifetime:
 
 ```kotlin
 val engine = Engine(
@@ -146,7 +146,7 @@ engine.createConversation(
     ConversationConfig(
         systemInstruction = Contents.of(systemPrompt(appId, ledgerDigest)),
         samplerConfig = SamplerConfig(topK = 40, topP = 0.9, temperature = 0.35),
-        tools = listOf(tool(GatekeeperTools())),
+        tools = listOf(tool(CrustyTools())),
         automaticToolCalling = false,   // CRITICAL — we execute, not the model
     )
 ).use { conversation ->
@@ -208,5 +208,5 @@ Current time: 23:14 (blackout starts 23:30)
 - `AccessibilityServiceInfo`: `TYPE_WINDOW_STATE_CHANGED`, `FEEDBACK_GENERIC`, `flags = FLAG_INCLUDE_NOT_IMPORTANT_VIEWS`, no `packageNames` filter (users add apps at runtime).
 - Debounce: ignore repeat events for the same package within 500 ms; ignore our own package and the launcher.
 - `BlockActivity` launches with `FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK` in its own task, `excludeFromRecents=true`, `launchMode="singleTask"`.
-- Fallback path if accessibility is unavailable or revoked: `UsageStatsManager.queryEvents()` polled at 1 s from `GatekeeperService`. Build the interceptor behind an interface so both implementations are swappable and the demo can't be killed by a permission reset.
+- Fallback path if accessibility is unavailable or revoked: `UsageStatsManager.queryEvents()` polled at 1 s from `CrustyService`. Build the interceptor behind an interface so both implementations are swappable and the demo can't be killed by a permission reset.
 - Grayscale mode: `Settings.Secure` display daltonizer via Shizuku if present, otherwise a full-screen overlay with a saturation-0 `ColorMatrix` (`TYPE_APPLICATION_OVERLAY`, not touchable, not focusable). Overlay is the reliable hackathon path.

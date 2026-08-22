@@ -116,7 +116,7 @@ Four steps, one decision per screen, `MediumFlexibleTopAppBar` with the step tit
 1. **What are you trying to change?** Free text. This goes verbatim into the system prompt and is the highest-leverage input in the app — give it a full screen.
 2. **Which apps?** App picker with icons, multi-select.
 3. **Your limits.** Daily budget per app, max minutes per grant, blackout window. Explain plainly that changes take 2 hours to apply, and why.
-4. **Getting the model ready.** Download with real progress and size. Say it out loud: *"About 1.2 GB. It stays on your phone. After this, Gatekeeper works with no connection at all."*
+4. **Getting the model ready.** Download with real progress and size. Say it out loud: *"About 1.2 GB. It stays on your phone. After this, Crusty works with no connection at all."*
 
 Permissions are requested in context with a plain-language rationale screen before the system dialog — never cold. The accessibility rationale must state exactly what is read and that it never leaves the device.
 

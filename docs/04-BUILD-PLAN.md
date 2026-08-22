@@ -48,13 +48,13 @@ If you are solo: do A first to de-risk, then B, then C, and drop grayscale.
 **Lane A — Model**
 - [ ] `litertlm-android` dependency + the two `uses-native-library` OpenCL entries in the manifest
 - [ ] `InferenceEngine`: `Engine.initialize()` on `Dispatchers.Default`, GPU with CPU fallback, `cacheDir` set. **Log time-to-READY.**
-- [ ] `GatekeeperTools : ToolSet` with `@Tool proposeAccess(...)`, `automaticToolCalling = false`
+- [ ] `CrustyTools : ToolSet` with `@Tool proposeAccess(...)`, `automaticToolCalling = false`
 - [ ] System prompt from `05-PROMPTS.md`, few-shot refusals included
 - [ ] Prove it: a hardcoded plea in a test activity → streamed text → parsed `Proposal`. **This is the 12:30 gate.**
 
 **Lane B — Enforcement**
-- [ ] `GatekeeperAccessibilityService`, `TYPE_WINDOW_STATE_CHANGED`, 500 ms debounce, self and launcher excluded
-- [ ] `GatekeeperService` foreground service (`specialUse`) that will hold the engine
+- [ ] `CrustyAccessibilityService`, `TYPE_WINDOW_STATE_CHANGED`, 500 ms debounce, self and launcher excluded
+- [ ] `CrustyService` foreground service (`specialUse`) that will hold the engine
 - [ ] `BlockActivity`: own task, `excludeFromRecents`, `singleTask`, launches on watched-app foreground
 - [ ] Grant lifecycle: in-memory timed pass + ongoing countdown notification with `Chronometer`, re-block on expiry
 - [ ] Prove it: opening Instagram shows a blank block screen in < 400 ms, a hardcoded 1-minute pass lets you through and re-blocks
@@ -71,7 +71,7 @@ Model produces a parsed `Proposal` on-device. **If it doesn't, stop and fix it �
 
 ## 12:30 – 14:30 — Join the loop
 
-- [ ] Move the engine into `GatekeeperService`, warm from service start
+- [ ] Move the engine into `CrustyService`, warm from service start
 - [ ] `BlockActivity` → real streaming → tool call → `PolicyEngine.clamp()` → `Grant` → pass issued
 - [ ] Ledger writes on grant and on expiry, digest feeds the next prompt
 - [ ] Offer card with the clamp disclosure line

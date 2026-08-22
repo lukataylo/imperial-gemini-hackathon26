@@ -5,7 +5,7 @@
 The model's only permitted action. `automaticToolCalling = false`, so LiteRT-LM hands the call to us instead of executing it.
 
 ```kotlin
-class GatekeeperTools : ToolSet {
+class CrustyTools : ToolSet {
     @Tool(description = "Decide what access, if any, to give the user right now. " +
                         "Call this exactly once, after you have understood why they want in.")
     fun proposeAccess(
@@ -30,7 +30,7 @@ Returning a stub is fine — `automaticToolCalling = false` means we intercept t
 Assembled per negotiation: static block + ledger digest + hard limits.
 
 ```
-You are the gatekeeper on this person's phone. They asked you to stop them
+You are the crusty on this person's phone. They asked you to stop them
 using {APP_NAME} without thinking. Right now they are trying to open it and
 you are the only thing in the way.
 

@@ -56,7 +56,7 @@ Record on the device, screen capture, one take if you can. Airplane mode visible
 
 | Time | Shot | Say |
 |---|---|---|
-| 0:00–0:12 | Home screen, airplane mode toggled on camera | "Every blocker is a switch you eventually turn off. Gatekeeper is one you have to argue with — and it runs entirely on this phone." |
+| 0:00–0:12 | Home screen, airplane mode toggled on camera | "Every blocker is a switch you eventually turn off. Crusty is one you have to argue with — and it runs entirely on this phone." |
 | 0:12–0:35 | Tap Instagram → block screen → type *"just quickly checking something"* → agent pushes back | "It asks why. Vague answers don't earn time." |
 | 0:35–1:00 | Type the real reason → agent offers 10 minutes, grayscale → accept | "A specific reason earns the smallest access that meets it. Ten minutes, grayscale, because you said one reply." |
 | 1:00–1:15 | Instagram opens in grayscale, countdown in the shade | "The grant is timed and degraded. Then the block comes back." |
@@ -67,7 +67,7 @@ Beat 1:15 is the one that wins. If the video runs long, cut the grayscale shot, 
 
 ## Write-up (draft — edit for what actually shipped)
 
-> **The problem.** Every self-control app on the market is a static rule you set while calm and confront while craving. There is nothing between total block and total surrender, so the only way through is a bypass — which is why the category has spent a decade in an arms race over uninstall protection rather than over the actual decision. Gatekeeper replaces the wall with a negotiation: you can always get in, but you have to make a case to something that pushes back, remembers what you promised last time, and offers the smallest access that meets the need you stated.
+> **The problem.** Every self-control app on the market is a static rule you set while calm and confront while craving. There is nothing between total block and total surrender, so the only way through is a bypass — which is why the category has spent a decade in an arms race over uninstall protection rather than over the actual decision. Crusty replaces the wall with a negotiation: you can always get in, but you have to make a case to something that pushes back, remembers what you promised last time, and offers the smallest access that meets the need you stated.
 >
 > **Architecture.** A Gemma 4 E2B model runs on-device via LiteRT-LM, held warm in a foreground service so it is ready the instant an accessibility service detects a watched app coming to the foreground. The model negotiates in natural language and then calls a single `propose_access` tool. Crucially, we set `automaticToolCalling = false`: the model's proposal is handed to a pure-Kotlin, deterministic policy engine which clamps it against limits the user set in advance, and only that engine can mint a grant. The model is a negotiator, never an authority — prompt-inject it into offering eight hours and the clamp still returns fifteen minutes or a refusal, which we cover with adversarial unit tests. Outcomes are written to a local ledger whose digest feeds the next negotiation, so the agent can quote your last broken promise back to you.
 >

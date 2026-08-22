@@ -9,7 +9,7 @@ A blocker you can argue with — and that argues back, remembers what you promis
 Rehearse this end-to-end. Every scope decision serves it.
 
 1. Phone in **airplane mode**, visibly. (Sells "local" in one gesture.)
-2. Tap Instagram. Gatekeeper takes the screen — calm, not alarming.
+2. Tap Instagram. Crusty takes the screen — calm, not alarming.
 3. Type a weak plea: *"just quickly checking something"*. The agent pushes back and offers nothing, or offers 3 minutes with the feed hidden.
 4. Type a real reason: *"I need to reply to Maya about tomorrow's venue"*. Agent grants **10 minutes, grayscale**, and asks you to confirm the promise.
 5. Countdown runs. Grayscale visibly applied. Time expires, block returns.
