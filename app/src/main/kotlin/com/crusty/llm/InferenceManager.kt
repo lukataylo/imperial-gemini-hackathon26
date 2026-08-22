@@ -196,19 +196,38 @@ class InferenceManager(
                 else -> "\n\n[You have already asked enough. Call propose_access on this " +
                     "message. If they still have not given a real reason, deny.]"
             }
+            // Some turns the model calls the tool properly; some turns it types the call
+            // as text. Handle both, and never let the raw syntax reach the chat bubble.
+            val buffer = StringBuilder()
+            var shownChars = 0
+            var suppressing = false
+            val marker = "propose_access"
+
             try {
                 conversation.sendMessageAsync(Contents.of(plea + directive)).collect { responseMessage ->
-                    // Prose arrives in `contents`. Note Message.toString() renders ONLY contents —
-                    // the tool call lives in `toolCalls` and is invisible to it.
                     val text = responseMessage.contents.toString()
-                    // isNotEmpty, not isNotBlank: a whitespace-only delta is a real space and
-                    // dropping it runs words together on screen.
                     if (text.isNotEmpty()) {
-                        emit(NegotiationEvent.Token(text))
+                        buffer.append(text)
+                        if (!suppressing) {
+                            val idx = buffer.indexOf(marker)
+                            if (idx >= 0) {
+                                if (idx > shownChars) {
+                                    emit(NegotiationEvent.Token(buffer.substring(shownChars, idx)))
+                                }
+                                shownChars = buffer.length
+                                suppressing = true
+                            } else {
+                                // hold back a short tail so a partially-streamed "propose_ac…"
+                                // never flashes on screen before we can suppress it
+                                val safeEnd = (buffer.length - marker.length).coerceAtLeast(shownChars)
+                                if (safeEnd > shownChars) {
+                                    emit(NegotiationEvent.Token(buffer.substring(shownChars, safeEnd)))
+                                    shownChars = safeEnd
+                                }
+                            }
+                        }
                     }
 
-                    // The actual proposal. automaticToolCalling = false means the library hands
-                    // us the call instead of executing it — typed arguments, no regex needed.
                     if (!emittedProposal) {
                         val call = responseMessage.toolCalls.firstOrNull {
                             it.name == "propose_access" || it.name == "proposeAccess"
@@ -219,8 +238,19 @@ class InferenceManager(
                         }
                     }
                 }
+
+                if (!suppressing && buffer.length > shownChars) {
+                    emit(NegotiationEvent.Token(buffer.substring(shownChars)))
+                }
+
+                // Fallback: the model wrote the call instead of making it.
+                if (!emittedProposal) {
+                    parseProposalFromText(buffer.toString())?.let {
+                        emittedProposal = true
+                        emit(NegotiationEvent.Proposed(it))
+                    }
+                }
             } catch (e: Exception) {
-                // Never fake a model reply — a native failure must not look like a negotiation.
                 Log.e("InferenceManager", "Inference failed", e)
                 emit(NegotiationEvent.Error(e.message ?: "on-device model failed"))
             }
@@ -367,6 +397,15 @@ class InferenceManager(
             var minutes = 10
             var mode = AccessMode.GRAYSCALE
             var verdict = Verdict.COUNTER
+            Regex("""verdict\s*=\s*["']?(grant|deny|counter|conditional)""", RegexOption.IGNORE_CASE)
+                .find(content)?.let {
+                    verdict = when (it.groupValues[1].lowercase()) {
+                        "grant" -> Verdict.GRANT
+                        "deny" -> Verdict.DENY
+                        "conditional" -> Verdict.CONDITIONAL
+                        else -> Verdict.COUNTER
+                    }
+                }
             var rationale = "Grant proposed"
             var promise = ""
 
