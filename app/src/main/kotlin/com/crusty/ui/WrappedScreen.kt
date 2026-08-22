@@ -51,6 +51,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.Image
+import androidx.compose.ui.unit.Dp
+import androidx.annotation.DrawableRes
 
 @Composable
 fun WrappedScreen(
@@ -180,6 +182,24 @@ fun WrappedScreen(
     }
 }
 
+/**
+ * Crusty reacting to whatever the page just said. The expression is the page's tone:
+ * curious at the numbers, unimpressed at your go-to excuse, sleepy at the overruns,
+ * pleased when there's nothing to fix.
+ */
+@Composable
+private fun CrustyMood(
+    @DrawableRes res: Int,
+    modifier: Modifier = Modifier,
+    height: Dp = 132.dp,
+) {
+    Image(
+        painter = painterResource(id = res),
+        contentDescription = null,
+        modifier = modifier.height(height)
+    )
+}
+
 @Composable
 private fun HeadlineNumbersCard(insights: WeeklyInsights) {
     Card(
@@ -264,6 +284,11 @@ private fun HeadlineNumbersCard(insights: WeeklyInsights) {
                         )
                     }
                 }
+
+            CrustyMood(
+                res = R.drawable.crusty_curious,
+                modifier = Modifier.align(Alignment.End)
+            )
             }
         }
     }
@@ -333,6 +358,11 @@ private fun SignatureTechniqueCard(insights: WeeklyInsights) {
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
+
+            CrustyMood(
+                res = R.drawable.crusty_angry,
+                modifier = Modifier.align(Alignment.End)
+            )
             }
         }
     }
@@ -553,6 +583,11 @@ private fun OverrunProfileCard(insights: WeeklyInsights) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+            CrustyMood(
+                res = R.drawable.crusty_sleepy,
+                modifier = Modifier.align(Alignment.End)
+            )
             }
         }
     }
@@ -630,6 +665,11 @@ private fun RecommendationsCard(insights: WeeklyInsights) {
                         }
                     }
                 }
+
+            CrustyMood(
+                res = R.drawable.crusty_happy,
+                modifier = Modifier.align(Alignment.End)
+            )
             }
         }
     }
