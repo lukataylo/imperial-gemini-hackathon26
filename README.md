@@ -1,8 +1,8 @@
-# Gatekeeper
+# Crusty
 
 An Android app blocker you negotiate with — powered by on-device Gemma 4.
 
-Gatekeeper stops you from opening distracting apps, but instead of a hard block, it starts a conversation. State your reason for opening the app. Gatekeeper asks clarifying questions, remembers whether you kept your previous promises, and offers the minimal pass required — like 10 minutes in grayscale to send a single reply.
+Crusty stops you from opening distracting apps, but instead of a hard block, it starts a conversation. State your reason for opening the app. Crusty asks clarifying questions, remembers whether you kept your previous promises, and offers the minimal pass required — like 10 minutes in grayscale to send a single reply.
 
 Built for the **UK AI Agents Lab Hackathon at Imperial College London** (Track 2 — Best Use of Gemma).
 
@@ -63,7 +63,7 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21) # Or your JDK 21 path
 
 ### 3. Grant Device Permissions
 On first launch, enable the following Android permissions:
-- **Accessibility:** Settings → Accessibility → Gatekeeper
+- **Accessibility:** Settings → Accessibility → Crusty
 - **Usage Access:** Settings → Apps → Special access → Usage access
 - **Display Over Other Apps:** Settings → Apps → Special access → Display over other apps
 
