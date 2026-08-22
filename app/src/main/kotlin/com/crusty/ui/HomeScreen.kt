@@ -72,7 +72,8 @@ fun HomeScreen(
     insight: String? = null,
     insightLoading: Boolean = false,
     insightAvailable: Boolean = false,
-    onRunInsight: () -> Unit = {}
+    onRunInsight: () -> Unit = {},
+    reflectionText: String? = null
 ) {
     // Only show meters for apps that are actually on this device — a budget bar for an
     // app you don't have is noise, and it makes the demo look staged.
@@ -128,7 +129,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Weekly Wrapped Entry Card
+        // Weekly Wrapped Entry Card with Duo-style Reflection (Step 2)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -136,25 +137,45 @@ fun HomeScreen(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
             ) {
-                Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = "Your week with Crusty →",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Weekly recap, negotiation stats & insights",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CrustyAvatar(size = 32.dp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    androidx.compose.material3.Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = reflectionText ?: "All entries this week have been logged and filed alphabetically.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
         }
