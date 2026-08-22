@@ -65,7 +65,11 @@ fun HomeScreen(
     recentGrants: List<GrantHistoryItem>,
     onOpenSettings: () -> Unit,
     onSeedDemoData: () -> Unit,
-    onTestNegotiation: (String) -> Unit
+    onTestNegotiation: (String) -> Unit,
+    insight: String? = null,
+    insightLoading: Boolean = false,
+    insightAvailable: Boolean = false,
+    onRunInsight: () -> Unit = {}
 ) {
     // Only show meters for apps that are actually on this device — a budget bar for an
     // app you don't have is noise, and it makes the demo look staged.
@@ -143,6 +147,13 @@ fun HomeScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        if (installedWatched.isEmpty()) {
+                            Text(
+                                text = "None of your watched apps are installed on this device.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         installedWatched.forEach { app ->
                             val used = todayUsage[app.packageName] ?: 0
                             val budget = rules.dailyBudgetMinutes[app.packageName] ?: 60
@@ -180,6 +191,50 @@ fun HomeScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            // Section: cloud reflection. Gemma negotiates on-device; Gemini reads the
+            // aggregate history, where a bigger model earns its keep and latency is irrelevant.
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Weekly reflection",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (insightAvailable) {
+                        TextButton(onClick = onRunInsight, enabled = !insightLoading) {
+                            Text(
+                                if (insightLoading) "Thinking…" else "Analyse",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = insight
+                                ?: "Gemini reads your history in the cloud and tells you what " +
+                                "you can't see from inside the habit. Only aggregates are sent — " +
+                                "never what you typed.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (insight != null) MaterialTheme.colorScheme.onSurface
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

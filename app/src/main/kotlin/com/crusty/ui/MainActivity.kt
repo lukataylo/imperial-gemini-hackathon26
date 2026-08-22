@@ -32,6 +32,8 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
 
                 var showSettings by remember { mutableStateOf(false) }
+                var insight by remember { mutableStateOf<String?>(null) }
+                var insightLoading by remember { mutableStateOf(false) }
 
                 if (!settings.onboardingCompleted) {
                     OnboardingScreen(
@@ -74,6 +76,26 @@ class MainActivity : ComponentActivity() {
                         },
                         onTestNegotiation = { appId ->
                             BlockActivity.launch(this@MainActivity, appId)
+                        },
+                        insight = insight,
+                        insightLoading = insightLoading,
+                        insightAvailable = appContainer.usageInsights.isConfigured,
+                        onRunInsight = {
+                            scope.launch {
+                                insightLoading = true
+                                val res = appContainer.usageInsights.analyse(
+                                    grants = ledger.grantRecords,
+                                    usage = ledger.usageSamples,
+                                    userGoal = settings.userGoal
+                                )
+                                insight = when (res) {
+                                    is com.crusty.cloud.UsageInsights.Result.Success -> res.text
+                                    is com.crusty.cloud.UsageInsights.Result.Failure -> res.message
+                                    com.crusty.cloud.UsageInsights.Result.NotConfigured ->
+                                        "No Gemini key configured."
+                                }
+                                insightLoading = false
+                            }
                         }
                     )
                 }

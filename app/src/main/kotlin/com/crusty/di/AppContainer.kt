@@ -1,6 +1,7 @@
 package com.crusty.di
 
 import android.content.Context
+import com.crusty.cloud.UsageInsights
 import com.crusty.data.JsonLedgerRepository
 import com.crusty.data.JsonSettingsRepository
 import com.crusty.data.LedgerRepository
@@ -29,6 +30,7 @@ interface AppContainer {
     val modelDownloader: ModelDownloader
     val grantManager: GrantManager
     val grayscaleOverlayManager: GrayscaleOverlayManager
+    val usageInsights: UsageInsights
 }
 
 class DefaultAppContainer(override val context: Context) : AppContainer {
@@ -40,6 +42,7 @@ class DefaultAppContainer(override val context: Context) : AppContainer {
     override val inferenceManager: InferenceManager by lazy { InferenceManager(context, modelProvider, policyEngine, ledgerRepository, settingsRepository) }
     override val modelDownloader: ModelDownloader by lazy { ModelDownloader(context, modelProvider) }
     override val grayscaleOverlayManager: GrayscaleOverlayManager by lazy { GrayscaleOverlayManager(context) }
+    override val usageInsights: UsageInsights by lazy { UsageInsights() }
     override val grantManager: GrantManager by lazy {
         DefaultGrantManager(
             context = context,

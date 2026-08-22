@@ -14,6 +14,16 @@
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Android 11+ package visibility. Without this, getApplicationInfo/getApplicationIcon
+         throw NameNotFoundException for every other app, so installed-checks silently fail
+         and no launcher icons resolve. We only need apps the user can launch. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".CrustyApp"
         android:allowBackup="true"
