@@ -182,10 +182,22 @@ class InferenceManager(
     private class RealNegotiationSession(
         private val conversation: Conversation
     ) : NegotiationSession {
+        private var turn = 0
+
         override fun sendPlea(plea: String): Flow<NegotiationEvent> = flow {
             var emittedProposal = false
+            turn++
+            // A 2B model left to its own devices will interrogate forever. The prompt asks
+            // it to decide by turn 2; this makes that non-optional, and escalates after.
+            val directive = when {
+                turn == 1 -> ""
+                turn == 2 -> "\n\n[Turn 2. Decide now — call propose_access. " +
+                    "Grant, counter, or deny, but do not ask another question.]"
+                else -> "\n\n[You have already asked enough. Call propose_access on this " +
+                    "message. If they still have not given a real reason, deny.]"
+            }
             try {
-                conversation.sendMessageAsync(Contents.of(plea)).collect { responseMessage ->
+                conversation.sendMessageAsync(Contents.of(plea + directive)).collect { responseMessage ->
                     // Prose arrives in `contents`. Note Message.toString() renders ONLY contents —
                     // the tool call lives in `toolCalls` and is invisible to it.
                     val text = responseMessage.contents.toString()
