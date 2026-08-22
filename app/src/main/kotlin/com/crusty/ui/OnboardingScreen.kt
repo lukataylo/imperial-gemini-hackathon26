@@ -60,6 +60,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.layout.widthIn
 
 @Composable
 fun OnboardingScreen(
@@ -124,15 +126,51 @@ fun OnboardingScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
                     OutlinedTextField(
                         value = userGoal,
                         onValueChange = { userGoal = it },
-                        placeholder = { Text("e.g. stop losing evenings to reels") },
+                        placeholder = { Text("Tell Crusty your reason\u2026") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        minLines = 3
+                        minLines = 1
                     )
+
+                    Spacer(modifier = Modifier.height(36.dp))
+
+                    // Crusty, with a nudge
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Image(
+                            painter = painterResource(id = R.drawable.crusty_peeking),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .fillMaxWidth(0.58f)
+                                .aspectRatio(693f / 800f)
+                        )
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 16.dp)
+                                .widthIn(max = 176.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ) {
+                            Text(
+                                text = "Honesty helps me help you better.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                            )
+                        }
+                    }
                 }
 
                 // Step 2: App picker

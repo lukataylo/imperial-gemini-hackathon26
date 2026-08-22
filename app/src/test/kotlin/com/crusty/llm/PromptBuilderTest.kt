@@ -33,7 +33,9 @@ class PromptBuilderTest {
 
         val systemPrompt = PromptBuilder.buildSystemPrompt("Instagram", snapshot, rules, now, zone)
 
-        assertThat(systemPrompt).contains("You are Crusty, the gatekeeper on this person's phone.")
+        assertThat(systemPrompt).contains("You are Crusty")
+        // the voice examples must actually reach the model — they were dead code before
+        assertThat(systemPrompt).contains("EXAMPLES OF YOUR VOICE")
         assertThat(systemPrompt).contains("stop losing evenings to reels")
         assertThat(systemPrompt).contains("At most 15 minutes in one go")
         assertThat(systemPrompt).contains("3 grants left today")
