@@ -1,14 +1,18 @@
 # Gatekeeper
 
-A blocker you can argue with.
+An Android app blocker you negotiate with — powered by on-device Gemma 4.
 
-Gatekeeper stops you opening distracting apps — but instead of a wall, you get a negotiation. Tell it why you want in. It asks a question, remembers what you promised last time, and offers you the smallest amount of access that actually meets the need. Ten minutes in grayscale to send one reply, not an hour of scrolling.
+Gatekeeper stops you from opening distracting apps, but instead of a hard block, it starts a conversation. State your reason for opening the app. Gatekeeper asks clarifying questions, remembers whether you kept your previous promises, and offers the minimal pass required — like 10 minutes in grayscale to send a single reply.
 
-The whole thing runs on the phone. Gemma 4 E2B via LiteRT-LM, no network, no account. Your excuses stay on your device.
+Built for the **UK AI Agents Lab Hackathon at Imperial College London** (Track 2 — Best Use of Gemma).
 
-**Android / Pixel · Kotlin · Jetpack Compose · Gemma 4 E2B · LiteRT-LM**
+---
 
-Built for the UK AI Agents Lab hackathon at Imperial — **Track 2, Best Use of Gemma**.
+## How It Works
+
+1. **100% On-Device:** Runs Gemma 4 E2B via LiteRT-LM locally on your phone. No API keys, no external network calls, and fully functional in airplane mode.
+2. **Model Proposes, Policy Decides:** The model never has final authority. Gemma negotiates with you and calls `propose_access`. A deterministic, pure-Kotlin policy engine (`PolicyEngine.clamp()`) evaluates that proposal against hard limits you set while calm.
+3. **Jailbreak Proof:** Even if you prompt-inject the model into granting 8 hours of screen time, `PolicyEngine.clamp()` caps the grant to your preset maximum (e.g. 15 minutes) or rejects it entirely.
 
 ---
 
@@ -16,77 +20,81 @@ Built for the UK AI Agents Lab hackathon at Imperial — **Track 2, Best Use of 
 
 ```mermaid
 flowchart TD
-    A[User opens Instagram] --> B[AccessibilityService<br/>foreground app detected]
+    A[User opens Instagram] --> B[AccessibilityService<br/>detects foreground app]
     B --> C{PolicyEngine.evaluate<br/>pure Kotlin}
-    C -->|active grant| Z[Let through]
-    C -->|blackout / budget spent| D[Deny — no model call]
+    C -->|active grant| Z[Allow access]
+    C -->|blackout / budget spent| D[Deny access]
     C -->|negotiable| E[BlockActivity]
-    E --> F[Gemma 4 E2B<br/>LiteRT-LM, warm in foreground service]
-    F -->|streams reply| E
-    F --> G[Tool call: propose_access<br/>automaticToolCalling = false]
+    E --> F[Gemma 4 E2B<br/>LiteRT-LM on-device]
+    F -->|streams response| E
+    F --> G[Tool call: propose_access]
     G --> H{PolicyEngine.clamp<br/>pure Kotlin}
-    H -->|clamped to user's limits| I[Grant: 10 min, grayscale]
+    H -->|clamped to limits| I[Grant: 10 min, grayscale]
     H -->|rejected| D
     I --> J[Timed pass + countdown notification]
-    J --> K[Ledger: promise, outcome, honoured?]
-    K -.->|digest feeds next negotiation| F
+    J --> K[Ledger: record promise & outcome]
+    K -.->|history digest| F
 ```
 
-**The model never touches either decision diamond.** Gemma negotiates and proposes; a deterministic, pure-Kotlin policy engine decides. Talk it into offering eight hours and the clamp still returns fifteen minutes or a refusal.
+> **Core Safety Invariant:** Gemma only generates proposals. The pure-Kotlin policy engine owns the decision diamonds.
 
-## Setup
+---
 
-Requires a Pixel (or any Android 12+ device) and `adb`.
+## Quick Start
 
-Requires **JDK 21** and the Android SDK.
+### Prerequisites
+- Android 12+ device (Google Pixel recommended)
+- JDK 21 & Android SDK installed
+- `adb` configured
+
+### 1. Download & Push Model Weights
+Obtain `gemma-4-E2B-it.litertlm` (from Hugging Face LiteRT community) and push to your device:
 
 ```bash
-# 1. Get the model — ~1.25 GB, from the litert-community org on Hugging Face.
-#    ModelProvider probes /data/local/tmp and /sdcard/Download as well as the
-#    app's own files dir, so either of these works:
 adb push gemma-4-E2B-it.litertlm /sdcard/Download/
-# or, if /sdcard is awkward on your device:
-adb push gemma-4-E2B-it.litertlm /data/local/tmp/
-
-# 2. Build and install
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # or your JDK 21 path
-./gradlew installDebug
-
-# 3. Grant permissions (the app deep-links to each of these)
-#    Settings → Accessibility → Gatekeeper
-#    Settings → Apps → Special access → Usage access
-#    Settings → Apps → Special access → Display over other apps
 ```
 
-Run the policy tests — 25 of them, including the adversarial cases that prove a
-jailbroken model still can't mint an oversized grant:
+### 2. Build & Install
+
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 21) # Or your JDK 21 path
+./gradlew installDebug
+```
+
+### 3. Grant Device Permissions
+On first launch, enable the following Android permissions:
+- **Accessibility:** Settings → Accessibility → Gatekeeper
+- **Usage Access:** Settings → Apps → Special access → Usage access
+- **Display Over Other Apps:** Settings → Apps → Special access → Display over other apps
+
+---
+
+## Testing
+
+Run unit tests on the JVM (includes 25 tests verifying `PolicyEngine` invariants and adversarial jailbreak resistance):
 
 ```bash
 ./gradlew :app:testDebugUnitTest
 ```
 
-The model is not committed to this repo. After the first launch nothing else needs a network connection — the app works fully in airplane mode.
+---
+
+## Repository Structure
+
+For AI agents working on this repo, read [`AGENTS.md`](AGENTS.md) first.
+
+| Document | Description |
+|---|---|
+| [`docs/00-RESEARCH.md`](docs/00-RESEARCH.md) | Analysis of existing app blockers and failure modes |
+| [`docs/01-PRD.md`](docs/01-PRD.md) | Product scope, user flows, and demo script |
+| [`docs/02-ARCHITECTURE.md`](docs/02-ARCHITECTURE.md) | Package layout, policy engine contracts, and state machine |
+| [`docs/03-UI-SPEC.md`](docs/03-UI-SPEC.md) | Material 3 Expressive UI specifications |
+| [`docs/04-BUILD-PLAN.md`](docs/04-BUILD-PLAN.md) | Hour-by-hour build milestones |
+| [`docs/05-PROMPTS.md`](docs/05-PROMPTS.md) | System prompt engineering, tool schemas, and evals |
+| [`docs/06-SUBMISSION.md`](docs/06-SUBMISSION.md) | Hackathon submission deliverables and video outline |
 
 ---
 
-## For agents
+## License
 
-Start at **[`AGENTS.md`](AGENTS.md)**, then read `docs/` in numbered order. Your work queue is [`docs/04-BUILD-PLAN.md`](docs/04-BUILD-PLAN.md).
-
-## For humans
-
-| | |
-|---|---|
-| [`docs/00-RESEARCH.md`](docs/00-RESEARCH.md) | How every existing blocker works, and what they all get wrong |
-| [`docs/01-PRD.md`](docs/01-PRD.md) | Scope and the six-beat demo |
-| [`docs/02-ARCHITECTURE.md`](docs/02-ARCHITECTURE.md) | Modules, the negotiation loop, the policy contract |
-| [`docs/03-UI-SPEC.md`](docs/03-UI-SPEC.md) | Visual language — native Pixel, M3 Expressive, dynamic color |
-| [`docs/04-BUILD-PLAN.md`](docs/04-BUILD-PLAN.md) | Phased tasks with acceptance criteria |
-| [`docs/05-PROMPTS.md`](docs/05-PROMPTS.md) | System prompt, tool schema, eval pleas |
-| [`docs/06-SUBMISSION.md`](docs/06-SUBMISSION.md) | Deliverables, video script, write-up, judging alignment |
-
-## The one design rule
-
-**The model proposes; the policy engine disposes.** Gemma emits a structured proposal. A pure-Kotlin, deterministic policy layer clamps it against limits the user set while calm. If the model can be talked into granting eight hours — and it can — that proposal comes out the other side as fifteen minutes or a refusal.
-
-MIT licensed. Built at the UK AI Agents Lab hackathon, Imperial College London, August 2026.
+[MIT License](LICENSE) — Imperial College London, August 2026.
